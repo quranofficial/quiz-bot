@@ -15,7 +15,7 @@
     {
      "id": "f_sample_part",
      "type": "folder",
-     "title": "کەرتی نموونە",
+     "title": "کەرتی یەکەم",
      "children": [
       {
        "id": "q_sample_one",
@@ -127,17 +127,8 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "rename",
-   "step": "title",
-   "data": {
-    "fid": "f_sample_part",
-    "prompt": 190
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793040947
+  "updated_at": 1793040951
  }
 }
