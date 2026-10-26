@@ -135,7 +135,14 @@
    "username": "@ismahil_312",
    "joined": 1793040691,
    "stats": {},
-   "flashcards": [],
+   "flashcards": [
+    {
+     "id": "cc28eca7f",
+     "front": "Jsjs",
+     "back": "Jsjs",
+     "photo": null
+    }
+   ],
    "last_quiz": null,
    "uid": 1373569356
   }
@@ -144,14 +151,8 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "fcadd",
-   "step": "front",
-   "data": {}
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793041686
+  "updated_at": 1793041693
  }
 }
