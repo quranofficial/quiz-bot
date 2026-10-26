@@ -1,1 +1,48 @@
-.
+{
+ "settings": {"questions_per_quiz": 0},
+ "admins": [],
+ "tree": [
+  {
+   "id": "f_sample_sec",
+   "type": "folder",
+   "title": "بەشی نموونە",
+   "children": [
+    {
+     "id": "f_sample_part",
+     "type": "folder",
+     "title": "کەرتی نموونە",
+     "children": [
+      {
+       "id": "q_sample_one",
+       "type": "question",
+       "text": "کوردستان دەوڵەتە؟",
+       "image": null,
+       "options": [
+        {"text": "نەخێر", "correct": false},
+        {"text": "بەڵێ", "correct": true},
+        {"text": "نازانم", "correct": false},
+        {"text": "A+B ڕاستە", "correct": false}
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "pages": [
+  {
+   "id": "p_sample_notes",
+   "title": "تێبینیەکان",
+   "items": [
+    {
+     "id": "i_sample_note",
+     "type": "text",
+     "content": "ئەمە پەڕەیەکی نموونەیە ✅\nئادمین دەتوانێت لە پانێڵی ئادمین نووسین، وێنە یان فایل زیاد بکات — یان ئەم پەڕەیە بسڕێتەوە."
+    }
+   ]
+  }
+ ],
+ "sessions": {},
+ "wizard": {},
+ "meta": {"updated_at": 0}
+}
