@@ -56,6 +56,12 @@
    "type": "folder",
    "title": "بەندی سێیەم",
    "children": []
+  },
+  {
+   "id": "f701f1f71",
+   "type": "folder",
+   "title": "بەندی چوارەم",
+   "children": []
   }
  ],
  "pages": [
@@ -99,6 +105,6 @@
  "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793040750
+  "updated_at": 1793040763
  }
 }
