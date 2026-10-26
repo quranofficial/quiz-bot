@@ -160,7 +160,7 @@
  "wizard": {
   "1373569356": {
    "flow": "addq",
-   "step": "image",
+   "step": "text",
    "data": {
     "folder_id": "f6f30b63d",
     "image": null,
@@ -171,6 +171,6 @@
   }
  },
  "meta": {
-  "updated_at": 1793046815
+  "updated_at": 1793046828
  }
 }
