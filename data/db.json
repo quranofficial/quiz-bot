@@ -62,6 +62,12 @@
    "type": "folder",
    "title": "بەندی چوارەم",
    "children": []
+  },
+  {
+   "id": "f0a72902f",
+   "type": "folder",
+   "title": "بەندی پێنجەم",
+   "children": []
   }
  ],
  "pages": [
@@ -103,17 +109,8 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "newfolder",
-   "step": "title",
-   "data": {
-    "parent": "root",
-    "prompt": 164
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793040769
+  "updated_at": 1793040779
  }
 }
