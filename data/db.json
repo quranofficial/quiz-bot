@@ -7,7 +7,7 @@
   {
    "id": "f_sample_sec",
    "type": "folder",
-   "title": "بەشی نموونە",
+   "title": "بەندی یەکەم",
    "children": [
     {
      "id": "f_sample_part",
@@ -57,17 +57,8 @@
   }
  ],
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "rename",
-   "step": "title",
-   "data": {
-    "fid": "f_sample_sec",
-    "prompt": 8
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793027243
+  "updated_at": 1793027252
  }
 }
