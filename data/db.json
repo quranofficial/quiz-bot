@@ -165,12 +165,21 @@
     "folder_id": "f6f30b63d",
     "image": null,
     "text": "Test",
-    "options": [],
+    "options": [
+     {
+      "text": "A. 1",
+      "correct": false
+     },
+     {
+      "text": "B.2",
+      "correct": false
+     }
+    ],
     "prompt": 364
    }
   }
  },
  "meta": {
-  "updated_at": 1793046830
+  "updated_at": 1793046845
  }
 }
