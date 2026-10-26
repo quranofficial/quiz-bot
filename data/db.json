@@ -146,19 +146,9 @@
    "flow": "reg",
    "step": "name",
    "data": {}
-  },
-  "1373569356": {
-   "flow": "report",
-   "step": "pick",
-   "data": {
-    "qids": [
-     "q0f93726b"
-    ],
-    "title": "کەرتی یەکەم"
-   }
   }
  },
  "meta": {
-  "updated_at": 1793046543
+  "updated_at": 1793046553
  }
 }
