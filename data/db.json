@@ -151,17 +151,8 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "usrmsg",
-   "step": "msg",
-   "data": {
-    "uid": 8634363348,
-    "name": "Ahmed"
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793046755
+  "updated_at": 1793046758
  }
 }
