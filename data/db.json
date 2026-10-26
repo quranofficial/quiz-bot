@@ -108,12 +108,16 @@
    "username": "@Rio_K101",
    "joined": 1793040674,
    "stats": {
-    "quizzes": 1,
-    "total": 1,
-    "correct": 1,
-    "last_quiz_at": 1793041285,
+    "quizzes": 2,
+    "total": 2,
+    "correct": 2,
+    "last_quiz_at": 1793043674,
     "by_folder": {
      "کویزی گشتی": {
+      "q": 1,
+      "c": 1
+     },
+     "تاقیکردنەوەی گشتی": {
       "q": 1,
       "c": 1
      }
@@ -124,8 +128,8 @@
     "qids": [
      "q0f93726b"
     ],
-    "title": "کویزی گشتی",
-    "ts": 1793041285
+    "title": "تاقیکردنەوەی گشتی",
+    "ts": 1793043674
    },
    "uid": 8634363348
   },
@@ -135,12 +139,16 @@
    "username": "@ismahil_312",
    "joined": 1793040691,
    "stats": {
-    "quizzes": 1,
-    "total": 1,
+    "quizzes": 2,
+    "total": 2,
     "correct": 0,
-    "last_quiz_at": 1793043384,
+    "last_quiz_at": 1793043677,
     "by_folder": {
      "کەرتی یەکەم": {
+      "q": 1,
+      "c": 0
+     },
+     "بەندی یەکەم": {
       "q": 1,
       "c": 0
      }
@@ -158,8 +166,8 @@
     "qids": [
      "q0f93726b"
     ],
-    "title": "کەرتی یەکەم",
-    "ts": 1793043384
+    "title": "بەندی یەکەم",
+    "ts": 1793043677
    },
    "uid": 1373569356
   }
@@ -167,25 +175,9 @@
  "tickets": {},
  "reports": {},
  "events": {},
- "sessions": {
-  "1373569356": {
-   "uid": 1373569356,
-   "folder_id": "f_sample_sec",
-   "folder_title": "بەندی یەکەم",
-   "qids": [
-    "q0f93726b"
-   ],
-   "idx": 0,
-   "answers": [],
-   "ts": 1793043662.0009587,
-   "src": "section",
-   "event_id": null,
-   "date": null,
-   "extra": {}
-  }
- },
+ "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793043662
+  "updated_at": 1793043677
  }
 }
