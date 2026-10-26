@@ -102,8 +102,20 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "1373569356": {
+   "flow": "addq",
+   "step": "image",
+   "data": {
+    "folder_id": "f06de57a4",
+    "image": null,
+    "text": "",
+    "options": [],
+    "prompt": 214
+   }
+  }
+ },
  "meta": {
-  "updated_at": 1793041073
+  "updated_at": 1793041080
  }
 }
