@@ -48,7 +48,9 @@
   "1373569356": {
    "flow": "addadmin",
    "step": "id",
-   "data": {}
+   "data": {
+    "prompt": 24
+   }
   }
  },
  "meta": {
