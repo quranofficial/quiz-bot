@@ -42,6 +42,12 @@
        ]
       }
      ]
+    },
+    {
+     "id": "f6f30b63d",
+     "type": "folder",
+     "title": "کەرتی دووەم",
+     "children": []
     }
    ]
   },
@@ -153,6 +159,6 @@
  "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793046777
+  "updated_at": 1793046807
  }
 }
