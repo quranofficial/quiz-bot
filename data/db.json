@@ -1,19 +1,32 @@
 {
- "settings": {
-  "questions_per_quiz": 10
- },
+ "settings": {"questions_per_quiz": 0,
+               "teacher_name": "ئارام عبدالرزاق",
+               "ticket_seq": 0},
  "admins": [],
  "tree": [
   {
    "id": "f_sample_sec",
    "type": "folder",
-   "title": "بەندی یەکەم",
+   "title": "بەشی نموونە",
    "children": [
     {
-     "id": "f16a89c3f",
+     "id": "f_sample_part",
      "type": "folder",
-     "title": "کەرتی یەکەم",
-     "children": []
+     "title": "کەرتی نموونە",
+     "children": [
+      {
+       "id": "q_sample_one",
+       "type": "question",
+       "text": "کوردستان دەوڵەتە؟",
+       "image": null,
+       "options": [
+        {"text": "نەخێر", "correct": false},
+        {"text": "بەڵێ", "correct": true},
+        {"text": "نازانم", "correct": false},
+        {"text": "A+B ڕاستە", "correct": false}
+       ]
+      }
+     ]
     }
    ]
   }
@@ -31,29 +44,9 @@
    ]
   }
  ],
- "sessions": {
-  "1373569356": {
-   "uid": 1373569356,
-   "folder_id": "root",
-   "folder_title": "کویزی گشتی",
-   "qids": [
-    "q_sample_one"
-   ],
-   "idx": 0,
-   "answers": [],
-   "ts": 1793027273.8398015
-  }
- },
- "wizard": {
-  "1373569356": {
-   "flow": "addadmin",
-   "step": "id",
-   "data": {
-    "prompt": 24
-   }
-  }
- },
- "meta": {
-  "updated_at": 1793027374
- }
+ "users": {},
+ "tickets": {},
+ "sessions": {},
+ "wizard": {},
+ "meta": {"updated_at": 0}
 }
