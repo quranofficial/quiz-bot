@@ -3,7 +3,7 @@
   "questions_per_quiz": 0,
   "teacher_name": "ئارام عبدالرزاق",
   "ticket_seq": 0,
-  "report_seq": 0
+  "report_seq": 1
  },
  "admins": [],
  "tree": [
@@ -141,22 +141,31 @@
   }
  },
  "tickets": {},
- "reports": {},
- "events": {},
- "sessions": {},
- "wizard": {
-  "8634363348": {
-   "flow": "report",
-   "step": "pick",
-   "data": {
-    "qids": [
-     "q0f93726b"
-    ],
-    "title": "کویزی گشتی"
+ "reports": {
+  "1": {
+   "id": 1,
+   "uid": 8634363348,
+   "name": "Ismahil",
+   "username": "@Rio_K101",
+   "quiz": "کویزی گشتی",
+   "qid": "q0f93726b",
+   "qtext": "ژمارەی ئێسکەکان: جەستەی مرۆڤێکی پێگەیشتوو لە ___ ئێسکی جیاواز پێکدێت.",
+   "comment": "ژژسهس",
+   "status": "open",
+   "created": 1793041308,
+   "replies": [],
+   "admin_msgs": {
+    "1373569356": {
+     "chat": 1373569356,
+     "mid": 230
+    }
    }
   }
  },
+ "events": {},
+ "sessions": {},
+ "wizard": {},
  "meta": {
-  "updated_at": 1793041299
+  "updated_at": 1793041308
  }
 }
