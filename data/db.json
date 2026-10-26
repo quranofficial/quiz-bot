@@ -85,8 +85,17 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "1373569356": {
+   "flow": "rename",
+   "step": "title",
+   "data": {
+    "fid": "f_sample_sec",
+    "prompt": 152
+   }
+  }
+ },
  "meta": {
-  "updated_at": 1793040706
+  "updated_at": 1793040719
  }
 }
