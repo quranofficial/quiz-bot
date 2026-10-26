@@ -144,8 +144,19 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "8634363348": {
+   "flow": "report",
+   "step": "pick",
+   "data": {
+    "qids": [
+     "q0f93726b"
+    ],
+    "title": "کویزی گشتی"
+   }
+  }
+ },
  "meta": {
-  "updated_at": 1793041285
+  "updated_at": 1793041299
  }
 }
