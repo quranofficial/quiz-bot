@@ -101,13 +101,27 @@
    ]
   }
  ],
- "users": {},
+ "users": {
+  "1373569356": {
+   "name": "Ismahil",
+   "teacher": null,
+   "username": "@ismahil_312",
+   "joined": 1793046229,
+   "uid": 1373569356
+  }
+ },
  "tickets": {},
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "1373569356": {
+   "flow": "reg",
+   "step": "name",
+   "data": {}
+  }
+ },
  "meta": {
-  "updated_at": 1793046214
+  "updated_at": 1793046229
  }
 }
