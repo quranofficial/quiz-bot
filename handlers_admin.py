@@ -3,13 +3,17 @@
 ئادمینەکان و ڕێکخستنەکان — دۆخی ویزارد لە داتادا هەڵدەگیرێت تا لەگەڵ
 دووبارە دەستپێکردنەکانی GitHub Actions نەمایەوە."""
 
+import json
 import logging
+import os
+import time
 
 from telegram import Update
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
 import config
+import fmtutil as fmt
 import handlers_user
 import keyboards as K
 import storage as st
@@ -34,7 +38,13 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     if update.effective_chat:
         storage.clear_wizard(update.effective_chat.id)
-    await msg.reply_text(T.ADMIN_HOME, reply_markup=K.admin_main())
+    await msg.reply_text(
+        T.ADMIN_HOME.format(users=st.knum(storage.count_users()),
+                            tickets=st.knum(storage.count_open_tickets()),
+                            reports=st.knum(storage.count_open_reports())),
+        reply_markup=K.admin_main(storage.count_open_tickets(),
+                                  storage.count_open_reports(),
+                                  storage.count_users()))
 
 
 async def cmd_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -52,7 +62,15 @@ async def cmd_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ---------------- بینینی پانێڵ و بەشەکان ----------------
 
 async def cb_home(query, context):
-    await handlers_user.edit_message(query, T.ADMIN_HOME, K.admin_main())
+    storage = _storage(context)
+    await handlers_user.edit_message(
+        query,
+        T.ADMIN_HOME.format(users=st.knum(storage.count_users()),
+                            tickets=st.knum(storage.count_open_tickets()),
+                            reports=st.knum(storage.count_open_reports())),
+        K.admin_main(storage.count_open_tickets(),
+                     storage.count_open_reports(),
+                     storage.count_users()))
 
 
 async def cb_folder(query, context, fid: str):
@@ -217,9 +235,12 @@ async def remove_admin(query, context, uid_raw: str):
 
 
 async def cb_settings(query, context):
-    qpq = _storage(context).db()["settings"].get("questions_per_quiz", 0) or 0
+    storage = _storage(context)
+    qpq = storage.db()["settings"].get("questions_per_quiz", 0) or 0
     val = T.SET_ALL_VALUE if qpq <= 0 else st.knum(qpq)
-    await handlers_user.edit_message(query, T.A_SETTINGS.format(v=val), K.settings_kb())
+    text = (T.A_SETTINGS.format(v=val)
+            + "\n• ناوی مامۆستا: {}".format(storage.get_teacher_name()))
+    await handlers_user.edit_message(query, text, K.settings_kb())
 
 
 async def set_all(query, context):
@@ -236,6 +257,8 @@ async def cb_stats(query, context):
     text = T.A_STATS.format(
         folders=st.knum(folders), questions=st.knum(questions),
         pages=st.knum(len(db["pages"])), admins=st.knum(n_admins),
+        users=st.knum(storage.count_users()),
+        tickets=st.knum(storage.count_open_tickets()),
         sessions=st.knum(len(db["sessions"])))
     await handlers_user.edit_message(query, text, K.back_to_panel_kb())
 
@@ -281,6 +304,23 @@ async def start_add_question(query, context, fid: str):
          "data": {"folder_id": fid, "image": None, "text": "", "options": []}}
     storage.set_wizard(chat, w)
     await _edit_prompt(context, chat, w, T.WIZ_Q_IMAGE, K.wiz_image_kb())
+
+
+def _apply_highlight(qtext: str, word: str):
+    """وشەیەک لە دەقی پرسیاردا بە {{...}} دیار دەکات (🔴 لە تێلێگرام).
+    گەڕانەوە: (دەقی نوێ، دۆزرایەوە یان نا)"""
+    w = (word or "").strip()
+    if not w:
+        return qtext, False
+    if w in qtext:
+        return qtext.replace(w, "{{" + w + "}}", 1), True
+    # بەبێ جیاوازی پیتی گەورە/بچووک
+    low = qtext.lower()
+    idx = low.find(w.lower())
+    if idx >= 0:
+        real = qtext[idx:idx + len(w)]
+        return qtext[:idx] + "{{" + real + "}}" + qtext[idx + len(w):], True
+    return qtext, False
 
 
 async def start_new_folder(query, context, parent: str):
@@ -405,6 +445,18 @@ async def route_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE, w: di
         elif step == "text":
             if msg.text and msg.text.strip():
                 data["text"] = msg.text.strip()[:3500]
+                _set_step(storage, chat, w, "highlight")
+                await _edit_prompt(context, chat, w, T.WIZ_Q_HIGHLIGHT,
+                                   K.wiz_highlight_kb())
+            else:
+                await msg.reply_text(T.WIZ_NEED_TEXT)
+        elif step == "highlight":
+            if msg.text and msg.text.strip():
+                new_text, found = _apply_highlight(data.get("text") or "", msg.text.strip()[:60])
+                if not found:
+                    await msg.reply_text(T.WIZ_HL_NOT_FOUND)
+                    return
+                data["text"] = new_text
                 _set_step(storage, chat, w, "options")
                 await _edit_prompt(context, chat, w,
                                    T.WIZ_Q_OPTIONS.format(opts=T.WIZ_Q_OPTIONS_EMPTY),
@@ -506,6 +558,19 @@ async def route_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE, w: di
             await msg.reply_text(T.WIZ_NEED_PHOTO)
         return
 
+    if flow == "tname" and msg.text and msg.text.strip():
+        storage.set_teacher_name(st.trunc(msg.text.strip(), 60))
+        storage.clear_wizard(chat)
+        await msg.reply_text(T.WIZ_SAVED_TEACHER.format(t=storage.get_teacher_name()),
+                             reply_markup=K.back_to_panel_kb())
+        return
+
+    if flow == "tkreply":
+        return await _finish_ticket_reply(update, context, w, data)
+
+    if flow == "impjson":
+        return await _route_import(update, context, w, data, msg)
+
 
 # ---------------- ویزارد: دوگمەکان ----------------
 
@@ -528,6 +593,17 @@ async def wx_skipimg(query, context):
         return await _wiz_gone(query)
     _set_step(storage, chat, w, "text")
     await _edit_prompt(context, chat, w, T.WIZ_Q_TEXT, None)
+
+
+async def wx_nohl(query, context):
+    """پشتگوێخستنی هەنگاوی وشەی سوور — ڕاستەوخۆ بۆ هەڵبژاردەکان."""
+    storage, chat, w = _wiz_of(query, context)
+    if not w or w.get("flow") != "addq" or w.get("step") != "highlight":
+        return await _wiz_gone(query)
+    _set_step(storage, chat, w, "options")
+    await _edit_prompt(context, chat, w,
+                       T.WIZ_Q_OPTIONS.format(opts=T.WIZ_Q_OPTIONS_EMPTY),
+                       K.wiz_options_kb(0))
 
 
 async def wx_done(query, context):
@@ -573,3 +649,1133 @@ async def wx_correct(query, context, idx: int):
     await query.message.reply_text(
         T.WIZ_Q_SAVED.format(folder=(folder or {}).get("title", "-")),
         reply_markup=K.after_question_saved_kb(fid))
+
+
+# ---------------- پرسیارەکانی بەکارهێنەران (پرسیار بکە) ----------------
+
+def _ticket_status_text(ticket) -> str:
+    if ticket.get("status") == "closed":
+        return T.TK_STATUS_CLOSED
+    if ticket.get("status") == "replied":
+        return T.TK_STATUS_REPLIED.format(n=st.knum(len(ticket.get("replies", []))))
+    return T.TK_STATUS_OPEN
+
+
+def _ticket_admin_text(ticket) -> str:
+    return (T.TICKET_ADMIN.format(
+        id=st.knum(ticket.get("id", 0)),
+        name=ticket.get("name") or "—",
+        username=ticket.get("username") or "—",
+        uid=ticket.get("uid") or "—",
+        teacher=ticket.get("_teacher_name") or "—",
+        is_t=("بەڵێ ✅" if ticket.get("teacher") else "نەخێر ❌"),
+        path=" › ".join(ticket.get("path") or []) or "—",
+        text=ticket.get("text") or T.RESULT_IMG)
+        + "\n\n" + _ticket_status_text(ticket))
+
+
+def _ticket_caption(ticket) -> str:
+    return (T.TICKET_ADMIN.format(
+        id=st.knum(ticket.get("id", 0)),
+        name=ticket.get("name") or "—",
+        username=ticket.get("username") or "—",
+        uid=ticket.get("uid") or "—",
+        teacher=ticket.get("_teacher_name") or "—",
+        is_t=("بەڵێ ✅" if ticket.get("teacher") else "نەخێر ❌"),
+        path=" › ".join(ticket.get("path") or []) or "—",
+        text="") + "\n\n" + _ticket_status_text(ticket))
+
+
+async def notify_new_ticket(context: ContextTypes.DEFAULT_TYPE, ticket: dict):
+    """پرسیاری نوێ بۆ هەموو ئادمینەکان دەنێرێت و ID ی پەیامەکان هەڵدەگرێت."""
+    storage = _storage(context)
+    ticket["_teacher_name"] = storage.get_teacher_name()
+    text = _ticket_admin_text(ticket)
+    kb = K.ticket_kb(ticket["id"])
+    photo = ticket.get("photo")
+    for aid in storage.all_admin_ids():
+        try:
+            sent = None
+            if photo and len(text) <= 900:
+                sent = await fmt.send_photo_html(context.bot, aid, photo, text,
+                                                 reply_markup=kb)
+            else:
+                sent = await fmt.send_html(context.bot, aid, text, reply_markup=kb)
+                if photo:
+                    try:
+                        await context.bot.send_photo(aid, photo,
+                                                     caption="🖼 وێنەی پرسیار #{})".format(
+                                                         st.knum(ticket["id"])))
+                    except Exception:
+                        pass
+            if sent:
+                ticket.setdefault("admin_msgs", {})[str(aid)] = {
+                    "chat": aid, "mid": sent.message_id, "photo": bool(photo and len(text) <= 900),
+                }
+        except Exception as e:
+            log.warning("ناردنی تیکی بۆ ئادمینی %s سەرکەوتوو نەبوو: %s", aid, e)
+    ticket.pop("_teacher_name", None)
+    storage.save_ticket(ticket)
+
+
+async def _refresh_admin_msgs(context: ContextTypes.DEFAULT_TYPE, ticket: dict):
+    """دۆخی پرسیارەکە لە پەیامە ئادمینەکاندا نوێ دەکاتەوە."""
+    storage = _storage(context)
+    ticket["_teacher_name"] = storage.get_teacher_name()
+    text = _ticket_admin_text(ticket)
+    kb = K.ticket_kb(ticket["id"])
+    for key in list((ticket.get("admin_msgs") or {}).keys()):
+        info = ticket["admin_msgs"][key]
+        try:
+            if info.get("photo"):
+                await context.bot.edit_message_caption(
+                    chat_id=info["chat"], message_id=info["mid"],
+                    caption=text, reply_markup=kb)
+            else:
+                await context.bot.edit_message_text(
+                    chat_id=info["chat"], message_id=info["mid"],
+                    text=text, reply_markup=kb)
+        except BadRequest as e:
+            if "not modified" not in str(e).lower():
+                log.info("نوێکردنەوەی پەیامی ئادمین نەکرا: %s", e)
+        except Exception:
+            pass
+    ticket.pop("_teacher_name", None)
+    storage.save_ticket(ticket)
+
+
+async def cb_tickets(query, context):
+    storage = _storage(context)
+    tickets = storage.open_tickets()
+    if not tickets:
+        return await handlers_user.alert(query, T.A_TICKETS_EMPTY, K.back_to_panel_kb())
+    await handlers_user.edit_message(
+        query, T.A_TICKETS_TITLE.format(n=st.knum(len(tickets))),
+        K.tickets_list_kb(tickets))
+
+
+async def _send_ticket_view(query, context, ticket: dict):
+    storage = _storage(context)
+    ticket["_teacher_name"] = storage.get_teacher_name()
+    text = _ticket_admin_text(ticket)
+    kb = K.ticket_kb(ticket["id"])
+    photo = ticket.get("photo")
+    ticket.pop("_teacher_name", None)
+    try:
+        if photo and len(text) <= 900:
+            await fmt.send_photo_html(context.bot, query.message.chat_id, photo, text,
+                                      reply_markup=kb)
+        else:
+            await fmt.send_html(context.bot, query.message.chat_id, text, reply_markup=kb)
+            if photo:
+                try:
+                    await context.bot.send_photo(
+                        query.message.chat_id, photo,
+                        caption="🖼 وێنەی پرسیار #{})".format(st.knum(ticket["id"])))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+
+async def cb_ticket(query, context, payload: str):
+    storage = _storage(context)
+    parts = payload.split(":")
+    if len(parts) != 2 or parts[0] not in ("view", "reply", "close"):
+        return
+    action, tid_raw = parts[0], parts[1]
+    tid = st.to_int(tid_raw)
+    ticket = storage.get_ticket(tid) if tid is not None else None
+    if not ticket:
+        return await handlers_user.alert(query, T.TK_GONE)
+
+    if action == "view":
+        return await _send_ticket_view(query, context, ticket)
+
+    if action == "close":
+        ticket["status"] = "closed"
+        storage.save_ticket(ticket)
+        await handlers_user.alert(query, T.TK_CLOSED_MSG)
+        await _refresh_admin_msgs(context, ticket)
+        return
+
+    if action == "reply":
+        chat = query.message.chat_id
+        storage.set_wizard(chat, {"flow": "tkreply", "step": "msg",
+                                  "data": {"tid": tid}})
+        await handlers_user.alert(query, T.TK_REPLY_PROMPT.format(id=st.knum(tid)))
+
+
+async def _finish_ticket_reply(update, context, w: dict, data: dict):
+    storage = _storage(context)
+    msg = update.message
+    chat = msg.chat_id
+    tid = data.get("tid")
+    ticket = storage.get_ticket(tid)
+    if not ticket:
+        storage.clear_wizard(chat)
+        return await msg.reply_text(T.TK_GONE)
+
+    text = (msg.text or msg.caption or "").strip()
+    photo = msg.photo[-1].file_id if msg.photo else None
+    if not text and not photo:
+        return await msg.reply_text(T.WIZ_NEED_TEXT)
+
+    admin_name = (msg.from_user.first_name or "ئادمین").strip()
+    head = T.USER_REPLY_HEAD.format(id=st.knum(tid), reply=fmt.apply(text) if text else "")
+    delivered = False
+    try:
+        if photo:
+            await fmt.send_photo_html(context.bot, ticket.get("uid"), photo,
+                                      head or "🖼", )
+        else:
+            await fmt.send_html(context.bot, ticket.get("uid"), head)
+        delivered = True
+    except Exception as e:
+        log.warning("ناردنی وەڵام بۆ بەکارهێنەر: %s", e)
+
+    ticket.setdefault("replies", []).append({
+        "by": msg.from_user.id, "name": admin_name,
+        "text": text, "photo": photo, "at": int(time.time()),
+    })
+    ticket["status"] = "replied"
+    storage.clear_wizard(chat)
+    storage.save_ticket(ticket)
+    await _refresh_admin_msgs(context, ticket)
+
+    if delivered:
+        await msg.reply_text(T.TK_DELIVERED.format(name=ticket.get("name") or "—"),
+                             reply_markup=K.back_to_panel_kb())
+    else:
+        await msg.reply_text(T.TK_USER_GONE)
+
+
+# ---------------- هێنانی پرسیار بە JSON ----------------
+
+_SEC_TITLE_KEYS = ("بەش", "بەشی", "ناو", "نام", "کەرت", "کەرتی",
+                   "title", "section", "chapter", "name", "folder")
+_CHILD_KEYS = ("کەرتەکان", "بەشەکان", "بەشە ناوەوەکان", "children", "sections",
+               "subs", "subsections")
+_QS_KEYS = ("پرسیارەکان", "پرسیار", "questions", "qs")
+_Q_TEXT_KEYS = ("پرسیار", "پرسیارەکە", "دەق", "question", "q", "text")
+_Q_IMG_KEYS = ("وێنە", "وێنەی پرسیار", "image", "img", "photo", "picture")
+_Q_OPT_KEYS = ("هەڵبژاردە", "هەڵبژاردەکان", "بژاردە", "options", "opts", "choices")
+_Q_ANS_KEYS = ("وەڵام", "وەڵامی ڕاست", "ڕاست", "answer", "correct", "correct_answer")
+_Q_EXPL_KEYS = ("ڕوونکردنەوە", "تێبینی", "explanation", "expl", "note")
+
+
+def _pick(d, keys):
+    for k in keys:
+        v = d.get(k)
+        if v not in (None, "", []):
+            return v
+    return None
+
+
+def _import_question(storage, q, folder_id, stats, errors, where):
+    if not isinstance(q, dict):
+        errors.append("{}: جۆرەکەی دروست نییە".format(where))
+        return
+    text = _pick(q, _Q_TEXT_KEYS)
+    image = _pick(q, _Q_IMG_KEYS)
+    opts = _pick(q, _Q_OPT_KEYS)
+    ans = _pick(q, _Q_ANS_KEYS)
+    expl = _pick(q, _Q_EXPL_KEYS)
+
+    if not isinstance(opts, list) or len(opts) < 2:
+        errors.append("{}: لانیکەم ٢ هەڵبژاردە پێویستە".format(where))
+        return
+    if len(opts) > 6:
+        errors.append("{}: زۆرترین ٦ هەڵبژاردە".format(where))
+        return
+    opt_texts = [str(o).strip() for o in opts]
+    if any(not t for t in opt_texts):
+        errors.append("{}: هەڵبژاردەی بەتاڵ ڕێگەپێدراو نییە".format(where))
+        return
+
+    idx = None
+    if isinstance(ans, bool):
+        idx = None
+    elif isinstance(ans, int):
+        idx = ans - 1  # ژمارەکردن لە ١ ەوە
+    elif isinstance(ans, str):
+        s2 = ans.strip().translate(st._WESTERN_TABLE)
+        if s2.isdigit():
+            idx = int(s2) - 1
+        elif s2.strip().upper() in st.LETTERS[:6]:
+            idx = st.LETTERS.index(s2.strip().upper())
+        else:
+            for i, t in enumerate(opt_texts):
+                if t == ans.strip():
+                    idx = i
+                    break
+    if idx is None or idx < 0 or idx >= len(opt_texts):
+        errors.append("{}: وەڵامی ڕاست دیاری نەکراوە (ژمارە ١ بۆ {} یان پیت A-{})".format(
+            where, st.knum(len(opt_texts)), st.LETTERS[len(opt_texts) - 1]))
+        return
+
+    text_s = str(text).strip()[:3500] if text else ""
+    img_s = str(image).strip() if image else ""
+    if not text_s and not img_s:
+        errors.append("{}: دەق یان وێنە پێویستە".format(where))
+        return
+
+    options = [{"text": t, "correct": (i == idx)} for i, t in enumerate(opt_texts)]
+    node = storage.add_question(folder_id, text_s, img_s or None, options)
+    if isinstance(expl, str) and expl.strip():
+        node["expl"] = fmt.plain(expl.strip())[:1000]
+        storage.save()
+    stats["questions"] += 1
+
+
+def _import_node(storage, node, parent_id, top, stats, errors, where):
+    if not isinstance(node, dict):
+        errors.append("{}: جۆرەکەی دروست نییە".format(where))
+        return
+    qs = _pick(node, _QS_KEYS)
+    subs = None
+    for k in _CHILD_KEYS:
+        if isinstance(node.get(k), list):
+            subs = node[k]
+            break
+
+    # دیاریکردنی ناوی بەشەکە
+    title = None
+    if top:
+        t1 = node.get("بەش") or node.get("بەشی")
+        if isinstance(t1, str) and t1.strip():
+            folder, created = storage.ensure_folder("root", t1.strip()[:60])
+            if created:
+                stats["folders"] += 1
+            deeper = folder["id"]
+            t2 = node.get("کەرت") or node.get("کەرتی")
+            if isinstance(t2, str) and t2.strip():
+                folder2, created2 = storage.ensure_folder(deeper, t2.strip()[:60])
+                if created2:
+                    stats["folders"] += 1
+                deeper = folder2["id"]
+            title = t1.strip()[:60]
+        else:
+            t0 = _pick(node, ("کەرت", "کەرتی", "ناو", "نام", "title", "name", "section", "chapter"))
+            if isinstance(t0, str) and t0.strip():
+                folder, created = storage.ensure_folder("root", t0.strip()[:60])
+                if created:
+                    stats["folders"] += 1
+                deeper = folder["id"]
+                title = t0.strip()[:60]
+            else:
+                # ناوی نییە بەڵام پرسیارەکان لەناودان — بەشێکی خۆکار دروست بکە
+                folder, created = storage.ensure_folder("root", "بەشی بێ ناو")
+                if created:
+                    stats["folders"] += 1
+                deeper = folder["id"]
+                title = "بەشی بێ ناو"
+    else:
+        t0 = _pick(node, _SEC_TITLE_KEYS)
+        if isinstance(t0, str) and t0.strip():
+            folder, created = storage.ensure_folder(parent_id, t0.strip()[:60])
+            if created:
+                stats["folders"] += 1
+            deeper = folder["id"]
+            title = t0.strip()[:60]
+        else:
+            deeper = parent_id
+
+    if title is None and not qs and not subs:
+        errors.append("{}: ناوی بەش یان پرسیارەکان نەدۆزرانەوە".format(where))
+        return
+    if title is None:
+        deeper = deeper or parent_id or "root"
+
+    if isinstance(qs, list):
+        for qi, q in enumerate(qs, 1):
+            _import_question(storage, q, deeper, stats, errors,
+                             "{} › پرسیار {}".format(where, qi) if where
+                             else "پرسیار {}".format(qi))
+    elif qs is not None and not isinstance(qs, list):
+        errors.append("{}: «پرسیارەکان» دەبێت لیست بێت".format(where))
+
+    if isinstance(subs, list):
+        for si, sub in enumerate(subs, 1):
+            _import_node(storage, sub, deeper, False, stats, errors,
+                         "{} › بەشی {}".format(where, si) if where
+                         else "بەشی {}".format(si))
+
+
+def import_json_data(storage, raw: str):
+    """داتای JSON هەڵدەشێوێت و بۆ دارچینەکە زیادی دەکات.
+    گەڕانەوە: (stats, errors) — stats: {"folders": n, "questions": n}"""
+    stats = {"folders": 0, "questions": 0}
+    errors = []
+    data = json.loads(raw)
+    if isinstance(data, list):
+        for i, item in enumerate(data, 1):
+            _import_node(storage, item, "root", True, stats, errors,
+                         "بەشی {}".format(st.knum(i)))
+    elif isinstance(data, dict):
+        wrapper = None
+        for k in _CHILD_KEYS:
+            if isinstance(data.get(k), list):
+                wrapper = data[k]
+                break
+        if wrapper is not None:
+            for i, item in enumerate(wrapper, 1):
+                _import_node(storage, item, "root", True, stats, errors,
+                             "بەشی {}".format(st.knum(i)))
+        elif _pick(data, _QS_KEYS) is not None or "بەش" in data or "کەرت" in data:
+            _import_node(storage, data, "root", True, stats, errors, "")
+        else:
+            raise ValueError(T.IMP_UNKNOWN)
+    else:
+        raise ValueError(T.IMP_UNKNOWN)
+    return stats, errors
+
+
+async def start_import_json(query, context):
+    storage = _storage(context)
+    chat = query.message.chat_id
+    storage.set_wizard(chat, {"flow": "impjson", "step": "file", "data": {}})
+    text = T.IMP_PROMPT + "\n\n" + T.IMP_EXAMPLE + "\n\n" + T.IMP_NOT_FILE
+    await handlers_user.edit_message(query, text, K.wiz_cancel_kb())
+
+
+async def start_set_teacher(query, context):
+    storage = _storage(context)
+    chat = query.message.chat_id
+    storage.set_wizard(chat, {"flow": "tname", "step": "name", "data": {}})
+    await handlers_user.edit_message(query, T.WIZ_SET_TEACHER, K.wiz_cancel_kb())
+
+
+MAX_IMPORT_BYTES = 2 * 1024 * 1024
+
+
+async def _route_import(update, context, w, data, msg):
+    storage = _storage(context)
+    chat = msg.chat_id
+    raw = None
+
+    if msg.document:
+        doc = msg.document
+        if (doc.file_size or 0) > MAX_IMPORT_BYTES:
+            return await msg.reply_text(T.IMP_TOO_BIG)
+        try:
+            tg_file = await doc.get_file()
+            path = os.path.join(config.DATA_DIR, "import_{}.json".format(chat))
+            await tg_file.download_to_drive(path)
+            with open(path, "r", encoding="utf-8") as f:
+                raw = f.read()
+            os.remove(path)
+        except Exception as e:
+            log.warning("داگرتنی فایلی JSON: %s", e)
+            return await msg.reply_text(T.IMP_NOT_FILE)
+    elif msg.text and msg.text.strip():
+        raw = msg.text.strip()
+    else:
+        return await msg.reply_text(T.IMP_NOT_FILE)
+
+    try:
+        stats, errors = import_json_data(storage, raw)
+    except json.JSONDecodeError as e:
+        return await msg.reply_text(T.IMP_BAD.format(err=str(e)[:300]))
+    except ValueError as e:
+        return await msg.reply_text(str(e))
+
+    storage.clear_wizard(chat)
+    if stats["questions"] == 0 and not errors:
+        return await msg.reply_text(T.IMP_NONE)
+
+    out = T.IMP_DONE.format(f=st.knum(stats["folders"]), q=st.knum(stats["questions"]))
+    if errors:
+        shown = errors[:10]
+        errs = "\n".join("• " + st.trunc(e, 80) for e in shown)
+        if len(errors) > 10:
+            errs += "\n• … و {} هەڵەی تر".format(st.knum(len(errors) - 10))
+        out += T.IMP_ERRS.format(n=st.knum(len(errors)), errs=errs)
+    await msg.reply_text(out, reply_markup=K.after_import_kb())
+
+
+# ============================================================================
+# ڕاپۆرتەکانی کێشە (لای ئادمین)
+# ============================================================================
+
+def _report_admin_text(r: dict) -> str:
+    status = {"open": T.TK_STATUS_OPEN, "replied": T.TK_STATUS_REPLIED.format(
+        n=st.knum(len(r.get("replies", [])))), "closed": T.TK_STATUS_CLOSED}.get(
+        r.get("status"), "")
+    return (T.RP_ADMIN.format(
+        id=st.knum(r.get("id", 0)),
+        name=r.get("name") or "—",
+        username=r.get("username") or "—",
+        uid=r.get("uid") or "—",
+        quiz=r.get("quiz") or "—",
+        qtext=r.get("qtext") or "—",
+        comment=r.get("comment") or "—")
+        + "\n\n" + status)
+
+
+async def notify_new_report(context: ContextTypes.DEFAULT_TYPE, report: dict):
+    """ڕاپۆرتی نوێ بۆ هەموو ئادمینەکان دەنێرێت و ID ی پەیامەکان هەڵدەگرێت."""
+    storage = _storage(context)
+    text = _report_admin_text(report)
+    kb = K.report_kb(report["id"], report.get("status", "open"))
+    for aid in storage.all_admin_ids():
+        try:
+            sent = await fmt.send_html(context.bot, aid, text, reply_markup=kb)
+            if sent:
+                report.setdefault("admin_msgs", {})[str(aid)] = {
+                    "chat": aid, "mid": sent.message_id}
+        except Exception as e:
+            log.warning("ناردنی ڕاپۆرت بۆ ئادمینی %s سەرکەوتوو نەبوو: %s", aid, e)
+    storage.save_report(report)
+
+
+async def _refresh_report_msgs(context: ContextTypes.DEFAULT_TYPE, report: dict):
+    text = _report_admin_text(report)
+    kb = K.report_kb(report["id"], report.get("status", "open"))
+    for key in list((report.get("admin_msgs") or {}).keys()):
+        info = report["admin_msgs"][key]
+        try:
+            await context.bot.edit_message_text(
+                chat_id=info["chat"], message_id=info["mid"],
+                text=text, reply_markup=kb)
+        except BadRequest as e:
+            if "not modified" not in str(e).lower():
+                log.info("نوێکردنەوەی پەیامی ڕاپۆرت نەکرا: %s", e)
+        except Exception:
+            pass
+    storage.save_report(report)
+
+
+async def cb_reports(query, context):
+    storage = _storage(context)
+    reports = storage.open_reports()
+    if not reports:
+        return await handlers_user.alert(query, T.A_RP_EMPTY, K.back_to_panel_kb())
+    await handlers_user.edit_message(
+        query, T.A_RP_TITLE.format(n=st.knum(len(reports))),
+        K.reports_list_kb(reports))
+
+
+async def cb_report(query, context, payload: str):
+    """rp:view:<id> / rp:reply:<id> / rp:close:<id> / rp:del:<id> / rp:delok:<id>"""
+    parts = payload.split(":")
+    if len(parts) != 2 or parts[0] not in ("view", "reply", "close", "del", "delok"):
+        return
+    action, rid_raw = parts[0], parts[1]
+    storage = _storage(context)
+    report = storage.get_report(rid_raw)
+    if not report:
+        return await handlers_user.alert(query, T.RP_GONE)
+
+    if action == "view":
+        text = _report_admin_text(report)
+        kb = K.report_kb(report["id"], report.get("status", "open"))
+        chat = query.message.chat_id
+        try:
+            await context.bot.send_message(chat, text, reply_markup=kb, parse_mode="HTML")
+        except Exception:
+            pass
+        return
+
+    if action == "close":
+        report["status"] = "closed"
+        storage.save_report(report)
+        await handlers_user.alert(query, T.RP_CLOSED_MSG)
+        await _refresh_report_msgs(context, report)
+        return
+
+    if action == "del":
+        await handlers_user.edit_message(
+            query, T.CONFIRM_DEL_QUESTION,
+            K.report_del_kb(report["id"]))
+        return
+
+    if action == "delok":
+        storage.delete_report(report["id"])
+        await handlers_user.alert(query, T.RP_DELETED)
+        return
+
+    if action == "reply":
+        chat = query.message.chat_id
+        storage.set_wizard(chat, {"flow": "rpreply", "step": "msg",
+                                  "data": {"rid": report["id"]}})
+        await handlers_user.alert(
+            query, T.RP_REPLY_PROMPT.format(id=st.knum(report.get("id", 0))))
+
+
+async def cb_report_clear(query, context):
+    """سڕینەوەی هەموو ڕاپۆرتە داخراوەکان — ڕێگری لە کەڵەکەبوون."""
+    storage = _storage(context)
+    n = storage.clear_closed_reports()
+    await handlers_user.alert(query, T.RP_CLEAR_DONE.format(n=st.knum(n)))
+    await cb_reports(query, context)
+
+
+async def _finish_report_reply(update, context, w: dict, data: dict):
+    storage = _storage(context)
+    msg = update.message
+    chat = msg.chat_id
+    report = storage.get_report(data.get("rid"))
+    if not report:
+        storage.clear_wizard(chat)
+        return await msg.reply_text(T.RP_GONE)
+
+    text = (msg.text or msg.caption or "").strip()
+    photo = msg.photo[-1].file_id if msg.photo else None
+    if not text and not photo:
+        return await msg.reply_text(T.WIZ_NEED_TEXT)
+
+    admin_name = (msg.from_user.first_name or "ئادمین").strip()
+    head = T.RP_USER_HEAD.format(id=st.knum(report.get("id", 0)),
+                                 reply=fmt.apply(text) if text else "")
+    delivered = False
+    try:
+        if photo:
+            await fmt.send_photo_html(context.bot, report.get("uid"), photo, head or "🖼")
+        else:
+            await fmt.send_html(context.bot, report.get("uid"), head)
+        delivered = True
+    except Exception as e:
+        log.warning("ناردنی وەڵامی ڕاپۆرت: %s", e)
+
+    report.setdefault("replies", []).append({
+        "by": msg.from_user.id, "name": admin_name,
+        "text": text, "photo": photo, "at": int(time.time()),
+    })
+    report["status"] = "replied"
+    storage.clear_wizard(chat)
+    storage.save_report(report)
+    await _refresh_report_msgs(context, report)
+
+    if delivered:
+        await msg.reply_text(T.RP_DELIVERED.format(name=report.get("name") or "—"),
+                             reply_markup=K.back_to_panel_kb())
+    else:
+        await msg.reply_text(T.RP_USER_GONE)
+
+
+# ============================================================================
+# بەکارهێنەران و ئامارەکانیان (لای ئادمین)
+# ============================================================================
+
+def _user_row(u: dict) -> str:
+    return "👤 {} ({}) — ID: {}".format(
+        u.get("name") or "—", u.get("username") or "—", u.get("uid") or "—")
+
+
+async def cb_users(query, context, page: int = 1):
+    storage = _storage(context)
+    users = storage.users_sorted()
+    if not users:
+        return await handlers_user.alert(query, T.A_USR_EMPTY, K.back_to_panel_kb())
+    total = len(users)
+    pages_n = max(1, (total + K.USERS_PER_PAGE - 1) // K.USERS_PER_PAGE)
+    page = max(1, min(page, pages_n))
+    chunk = users[(page - 1) * K.USERS_PER_PAGE: page * K.USERS_PER_PAGE]
+    await handlers_user.edit_message(
+        query, T.A_USR_TITLE.format(n=st.knum(total), p=st.knum(page), pp=st.knum(pages_n)),
+        K.users_list_kb(chunk, page, total))
+
+
+async def cb_user_view(query, context, uid_raw: str):
+    storage = _storage(context)
+    try:
+        uid = int(st.to_int(uid_raw))
+    except (TypeError, ValueError):
+        return await handlers_user.alert(query, T.A_USR_NOT_FOUND)
+    u = storage.get_user(uid)
+    if not u:
+        return await handlers_user.alert(query, T.A_USR_NOT_FOUND)
+
+    stats = u.get("stats") or {}
+    total = int(stats.get("total", 0))
+    correct = int(stats.get("correct", 0))
+    pct = int(round(correct * 100.0 / total)) if total else 0
+    by = stats.get("by_folder") or {}
+    if by:
+        lines = []
+        for title, cell in list(by.items())[:8]:
+            p2 = int(round(cell["c"] * 100.0 / cell["q"])) if cell.get("q") else 0
+            lines.append("• {} — {} / {} ({}٪)".format(
+                st.trunc(title, 30), st.knum(cell.get("c", 0)),
+                st.knum(cell.get("q", 0)), st.knum(p2)))
+        byfolder = "\n".join(lines)
+    else:
+        byfolder = T.A_USR_NOFOLDER
+
+    # ئەنجامەکانی تاقیکردنەوەی شەوانە (دوا ٥ ڕۆژ)
+    ev = storage.get_event()
+    qn_lines = []
+    if ev:
+        for date in sorted((ev.get("results") or {}).keys(), reverse=True)[:5]:
+            entry = ev["results"][date].get(str(uid))
+            if entry:
+                qn_lines.append("• {} — {} / {} ({}٪)".format(
+                    date, st.knum(entry.get("score", 0)),
+                    st.knum(entry.get("total", 0)), st.knum(entry.get("pct", 0))))
+    qn_txt = "\n".join(qn_lines) if qn_lines else T.A_USR_NOQN
+
+    text = T.A_USR_VIEW.format(
+        name=u.get("name") or "—",
+        username=u.get("username") or "—",
+        uid=u.get("uid") or "—",
+        teacher=storage.get_teacher_name(),
+        is_t=("بەڵێ ✅" if u.get("teacher") else
+              ("نەخێر ❌" if u.get("teacher") is not None else "—")),
+        joined=handlers_user.fmt_ts(u.get("joined")),
+        last=handlers_user.fmt_ts(stats.get("last_quiz_at") or u.get("joined")),
+        quizzes=st.knum(stats.get("quizzes", 0)),
+        total=st.knum(total), correct=st.knum(correct), pct=st.knum(pct),
+        byfolder=byfolder, qn=qn_txt)
+    await handlers_user.edit_message(query, text, K.user_view_kb())
+
+
+async def start_user_search(query, context):
+    storage = _storage(context)
+    chat = query.message.chat_id
+    storage.set_wizard(chat, {"flow": "usrsearch", "step": "q", "data": {}})
+    await handlers_user.edit_message(query, T.WIZ_USR_SEARCH, K.wiz_cancel_kb())
+
+
+async def _finish_user_search(update, context, w: dict):
+    storage = _storage(context)
+    msg = update.message
+    chat = msg.chat_id
+    results = storage.find_users(msg.text or "")
+    storage.clear_wizard(chat)
+    if not results:
+        return await msg.reply_text(T.A_USR_SEARCH_EMPTY, reply_markup=K.back_to_panel_kb())
+    # ئەنجامەکان وەک لیست — هەر یەکێک دوگمەی خۆی
+    rows = [[K.btn("👤 " + st.trunc(u.get("name") or str(u.get("uid")), 30),
+                   "usr:view:{}".format(u.get("uid")))] for u in results[:20]]
+    rows.append([K.btn(T.A_BTN_BACK_PANEL, "adm")])
+    from telegram import InlineKeyboardMarkup
+    await msg.reply_text(T.A_USR_TITLE.format(
+        n=st.knum(len(results)), p=st.knum(1), pp=st.knum(1)),
+        reply_markup=InlineKeyboardMarkup(rows))
+
+
+# ============================================================================
+# تاقیکردنەوەی شەوانە (لای ئادمین)
+# ============================================================================
+
+def _event_state_text(storage, ev: dict) -> str:
+    import events as evmod
+    state_map = {"wait": T.A_QN_STATE_WAIT, "open": T.A_QN_STATE_OPEN,
+                 "over": T.A_QN_STATE_OVER}
+    state = state_map.get(evmod.status(ev), "—")
+    src = ev.get("src") or {}
+    folder = st.find_node(storage.db()["tree"], src.get("folder_id"))
+    src_title = (folder or {}).get("title") or "—"
+    date = evmod.today_str()
+    n_played = len((ev.get("results") or {}).get(date) or {})
+    return T.A_QN_VIEW.format(
+        title=ev.get("title", "—"),
+        start=evmod.clock_k(ev.get("start", "—")),
+        end=evmod.clock_k(ev.get("end", "—")),
+        src=src_title,
+        n=st.knum(src.get("count") or st.count_questions(folder) if folder else 0),
+        shown=(T.A_QN_SHOWN_YES if ev.get("enabled") else T.A_QN_SHOWN_NO),
+        state=state, p=st.knum(n_played))
+
+
+async def cb_qnev(query, context):
+    storage = _storage(context)
+    ev = storage.get_event()
+    if not ev:
+        await handlers_user.edit_message(query, T.A_QN_NONE, K.qn_none_kb())
+    else:
+        kb = K.qn_view_kb(bool(ev.get("enabled")))
+        await handlers_user.edit_message(query, _event_state_text(storage, ev), kb)
+
+
+async def cb_qn_toggle(query, context):
+    storage = _storage(context)
+    ev = storage.get_event()
+    if not ev:
+        return await cb_qnev(query, context)
+    ev["enabled"] = not ev.get("enabled")
+    storage.save_event(ev)
+    await cb_qnev(query, context)
+
+
+async def cb_qn_delete(query, context):
+    await handlers_user.edit_message(query, T.CONFIRM_DEL_FOLDER.replace(
+        "{title}", "تاقیکردنەوەی شەوانە").replace(
+        "{subs}", "٠").replace("{qs}", "٠"),
+        K.qn_confirm_del_kb())
+
+
+async def cb_qn_delete_ok(query, context):
+    storage = _storage(context)
+    storage.save_event(None)
+    await handlers_user.alert(query, T.A_QN_DELETED)
+    await cb_qnev(query, context)
+
+
+async def cb_qn_results(query, context):
+    storage = _storage(context)
+    ev = storage.get_event()
+    if not ev:
+        return await cb_qnev(query, context)
+    import events as evmod
+    date = evmod.today_str()
+    day = (ev.get("results") or {}).get(date) or {}
+    if not day:
+        return await handlers_user.alert(query, T.A_QN_NO_RESULTS, K.back_to_panel_kb())
+    rows = evmod.leaderboard(day)
+    text = evmod.fmt_leaderboard(rows, ev.get("title", "—"))
+    try:
+        await context.bot.send_message(query.message.chat_id, text,
+                                       reply_markup=K.back_to_panel_kb(),
+                                       parse_mode="HTML")
+    except Exception:
+        pass
+
+
+# --- ویزاردی دروستکردن/دەستکاری ئیڤێنت ---
+
+async def qn_new(query, context):
+    storage = _storage(context)
+    chat = query.message.chat_id
+    storage.set_wizard(chat, {"flow": "qnev", "step": "title",
+                              "data": {"edit": False}})
+    await handlers_user.edit_message(query, T.WIZ_QN_TITLE, K.wiz_cancel_kb())
+
+
+async def qn_edit_time(query, context):
+    storage = _storage(context)
+    chat = query.message.chat_id
+    storage.set_wizard(chat, {"flow": "qntime", "step": "start", "data": {}})
+    await handlers_user.edit_message(query, T.WIZ_QN_START, K.wiz_cancel_kb())
+
+
+async def qn_edit_src(query, context):
+    storage = _storage(context)
+    chat = query.message.chat_id
+    tree = storage.db()["tree"]
+    if not tree:
+        return await handlers_user.alert(query, T.NO_SECTIONS)
+    storage.set_wizard(chat, {"flow": "qnsrc", "step": "folder",
+                              "data": {"path": []}})
+    kb = K.qn_folder_kb([n for n in tree if n.get("type") == "folder"], 0)
+    await handlers_user.edit_message(query, T.WIZ_QN_PICK, kb)
+
+
+def _ev_wizard_common(storage, ev: dict, data: dict):
+    """دروستکردنی ئۆبجێکتی ئیڤێنت لە داتای ویزارد."""
+    ev = ev or {"id": st.new_id("e"), "title": "تاقیکردنەوەی شەوانە",
+                "start": "21:00", "end": "21:30", "enabled": True,
+                "announced": {}, "results": {}}
+    if data.get("title"):
+        ev["title"] = data["title"]
+    if data.get("start"):
+        ev["start"] = data["start"]
+    if data.get("end"):
+        ev["end"] = data["end"]
+    if data.get("src"):
+        ev["src"] = data["src"]
+    return ev
+
+
+async def _route_qnev(update, context, w: dict):
+    """ویزاردی دروستکردنی ئیڤێنت: title → start → end → (بەشەکان بە دوگمە) → (ژمارە بە دوگمە)"""
+    import events as evmod
+    storage = _storage(context)
+    msg = update.message
+    if not msg or not msg.text:
+        return
+    chat = msg.chat_id
+    step = w.get("step")
+    data = w.setdefault("data", {})
+    txt = msg.text.strip()
+
+    if step == "title":
+        data["title"] = st.trunc(txt, 60)
+        w["step"] = "start"
+        storage.set_wizard(chat, w)
+        await msg.reply_text(T.WIZ_QN_START)
+        return
+
+    if step == "start":
+        t = evmod.parse_hhmm(txt)
+        if not t:
+            return await msg.reply_text(T.WIZ_QN_TIME_BAD)
+        data["start"] = t
+        w["step"] = "end"
+        storage.set_wizard(chat, w)
+        await msg.reply_text(T.WIZ_QN_END)
+        return
+
+    if step == "end":
+        t = evmod.parse_hhmm(txt)
+        if not t:
+            return await msg.reply_text(T.WIZ_QN_TIME_BAD)
+        data["end"] = t
+        # بەردەوام بۆ هەڵبژاردنی بەشی سەرچاوەی پرسیارەکان
+        w["flow"] = "qnsrc"
+        w["step"] = "folder"
+        w["data"] = {"path": [], "title": data.get("title"),
+                     "start": data.get("start"), "end": t}
+        storage.set_wizard(chat, w)
+        tree = storage.db()["tree"]
+        kb = K.qn_folder_kb([n for n in tree if n.get("type") == "folder"], 0)
+        await msg.reply_text(T.WIZ_QN_PICK, reply_markup=kb)
+        return
+
+
+async def cb_qn_folder(query, context, payload: str):
+    """ڕاوکردنی بەش بۆ سەرچاوەی پرسیارەکان: qnf:go:<fid> / qnf:back / qnf:ok"""
+    storage = _storage(context)
+    chat = query.message.chat_id
+    w = storage.get_wizard(chat)
+    if not w or w.get("flow") != "qnsrc":
+        return await handlers_user.alert(query, T.WIZ_GONE, K.back_to_panel_kb())
+    tree = storage.db()["tree"]
+    d = w.setdefault("data", {})
+    path = d.get("path") or []
+
+    if payload == "qnf:back":
+        if path:
+            path.pop()
+            d["path"] = path
+            storage.set_wizard(chat, w)
+        return await _qn_render_folder(query, context, w)
+
+    if payload == "qnf:ok":
+        if not path:
+            return await handlers_user.alert(query, T.ASK_NEED_PICK)
+        fid = path[-1]
+        folder = st.find_node(tree, fid)
+        n = st.count_questions(folder)
+        if not n:
+            return await handlers_user.alert(query, T.NO_QUESTIONS)
+        d["folder_id"] = fid
+        d["n"] = n
+        w["step"] = "count"
+        storage.set_wizard(chat, w)
+        await handlers_user.edit_message(
+            query, T.WIZ_QN_COUNT.format(n=st.knum(n)), K.qn_count_kb())
+        return
+
+    if payload.startswith("qnf:go:"):
+        fid = payload[7:]
+        node = st.find_node(tree, fid)
+        if not node or node.get("type") != "folder":
+            return await handlers_user.alert(query, T.GONE)
+        path.append(fid)
+        d["path"] = path
+        storage.set_wizard(chat, w)
+        return await _qn_render_folder(query, context, w)
+
+
+async def _qn_render_folder(query, context, w):
+    storage = _storage(context)
+    tree = storage.db()["tree"]
+    path = (w.get("data") or {}).get("path") or []
+    if path:
+        node = st.find_node(tree, path[-1])
+        children = [c for c in node.get("children", []) if c.get("type") == "folder"]
+    else:
+        children = [n for n in tree if n.get("type") == "folder"]
+    await handlers_user.edit_message(query, T.WIZ_QN_PICK,
+                                     K.qn_folder_kb(children, len(path)))
+
+
+async def cb_qn_count(query, context, all_flag: bool):
+    storage = _storage(context)
+    chat = query.message.chat_id
+    w = storage.get_wizard(chat)
+    if not w or w.get("flow") != "qnsrc":
+        return await handlers_user.alert(query, T.WIZ_GONE, K.back_to_panel_kb())
+    d = w.get("data") or {}
+    return await _save_event_count(query, context, w, 0 if all_flag else -1)
+
+
+async def _save_event_count(query, context, w: dict, count: int):
+    """count = 0 → هەمووی؛ count = -1 → وەک خۆی لە داتاوە (بۆ ناردن بە ژمارە)."""
+    storage = _storage(context)
+    chat = query.message.chat_id
+    d = w.get("data") or {}
+    chosen = 0 if count == 0 else max(1, int(d.get("count") or 1)) if count < 0 else count
+    ev = storage.get_event()
+    src = {"folder_id": d.get("folder_id"), "count": chosen}
+    ev = _ev_wizard_common(storage, ev, {
+        "title": d.get("title"), "start": d.get("start"),
+        "end": d.get("end"), "src": src})
+    storage.save_event(ev)
+    storage.clear_wizard(chat)
+    folder = st.find_node(storage.db()["tree"], d.get("folder_id"))
+    src_title = (folder or {}).get("title") or "—"
+    n = src["count"] or st.count_questions(folder)
+    await handlers_user.alert(
+        query, T.A_QN_SRC_SAVED.format(src=src_title, n=st.knum(n)))
+    await cb_qnev(query, context)
+
+
+async def cb_qn_cancel_wiz(query, context):
+    storage = _storage(context)
+    chat = query.message.chat_id
+    storage.clear_wizard(chat)
+    await handlers_user.alert(query, T.WIZ_CANCELLED, K.back_to_panel_kb())
+
+
+# ============================================================================
+# نامەی گشتی (Notification) بۆ هەموو بەکارهێنەران
+# ============================================================================
+
+async def cb_bcast(query, context, data: str):
+    storage = _storage(context)
+    chat = query.message.chat_id
+
+    if data == "bcast":
+        storage.set_wizard(chat, {"flow": "bcast", "step": "msg", "data": {}})
+        await handlers_user.edit_message(query, T.WIZ_BCAST, K.wiz_cancel_kb())
+        return
+
+    if data == "bcast:no":
+        storage.clear_wizard(chat)
+        await handlers_user.alert(query, T.BCAST_CANCELLED, K.back_to_panel_kb())
+        return
+
+    if data == "bcast:go":
+        w = storage.get_wizard(chat)
+        d = (w or {}).get("data") or {}
+        storage.clear_wizard(chat)
+        text = d.get("text") or ""
+        photo = d.get("photo")
+        users = storage.users_sorted()
+        ok_n = fail_n = 0
+        BATCH = 20
+        for i in range(0, len(users), BATCH):
+            batch = users[i:i + BATCH]
+
+            async def _send_one(u):
+                try:
+                    if photo:
+                        await fmt.send_photo_html(context.bot, u.get("uid"), photo,
+                                                  text or None)
+                    else:
+                        await context.bot.send_message(u.get("uid"), text)
+                    return True
+                except Exception:
+                    return False
+
+            import asyncio
+            results = await asyncio.gather(*[_send_one(u) for u in batch])
+            ok_n += sum(1 for r in results if r)
+            fail_n += sum(1 for r in results if not r)
+            if i + BATCH < len(users):
+                await asyncio.sleep(1.0)
+        out = T.BCAST_DONE.format(ok=st.knum(ok_n))
+        if fail_n:
+            out += "\n" + T.BCAST_FAIL.format(fail=st.knum(fail_n))
+        await context.bot.send_message(chat, out, reply_markup=K.back_to_panel_kb())
+
+
+async def _route_bcast(update, context, w: dict):
+    storage = _storage(context)
+    msg = update.message
+    if not msg:
+        return
+    chat = msg.chat_id
+    d = w.setdefault("data", {})
+    text = (msg.text or msg.caption or "").strip()
+    photo = msg.photo[-1].file_id if msg.photo else None
+    if not text and not photo:
+        return await msg.reply_text(T.WIZ_NEED_ITEM)
+    d["text"] = text
+    d["photo"] = photo
+    w["step"] = "confirm"
+    storage.set_wizard(chat, w)
+    n = storage.count_users()
+    preview = st.trunc(text or "🖼", 300)
+    await msg.reply_text(T.BCAST_CONFIRM.format(n=st.knum(n), preview=preview),
+                         reply_markup=K.bcast_confirm_kb(n))
+
+
+# ============================================================================
+# ڕێگەری ویزاردی ئادمین (زیادکراو)
+# ============================================================================
+
+async def route_wizard_extra(update: Update, context: ContextTypes.DEFAULT_TYPE, w: dict):
+    """فلۆوە نوێکانی ئادمین: rpreply / usrsearch / qnev / qntime / qnsrc / bcast"""
+    flow = w.get("flow")
+    data = w.get("data") or {}
+    if flow == "rpreply":
+        return await _finish_report_reply(update, context, w, data)
+    if flow == "usrsearch":
+        return await _finish_user_search(update, context, w)
+    if flow == "qnev":
+        return await _route_qnev(update, context, w)
+    if flow == "qntime":
+        return await _route_qntime(update, context, w)
+    if flow == "qnsrc":
+        # ژمارەی پرسیارەکان بە تێکست (ئەگەر لە هەنگاوی count دایە)
+        if w.get("step") == "count":
+            msg = update.message
+            if msg and msg.text:
+                n = st.to_int(msg.text)
+                if n is None or n < 1 or n > 500:
+                    return await msg.reply_text(T.WIZ_INVALID_NUM)
+                return await _save_event_src(update, context, w, count=n)
+        return  # باشتر بە دوگمە
+    if flow == "bcast":
+        return await _route_bcast(update, context, w)
+
+
+async def _save_event_src(update, context, w: dict, count: int):
+    storage = _storage(context)
+    msg = update.message
+    chat = msg.chat_id
+    d = w.get("data") or {}
+    ev = storage.get_event()
+    src = {"folder_id": d.get("folder_id"), "count": int(count)}
+    ev = _ev_wizard_common(storage, ev, {
+        "title": d.get("title"), "start": d.get("start"),
+        "end": d.get("end"), "src": src})
+    storage.save_event(ev)
+    storage.clear_wizard(chat)
+    folder = st.find_node(storage.db()["tree"], d.get("folder_id"))
+    src_title = (folder or {}).get("title") or "—"
+    n = src["count"] or st.count_questions(folder)
+    try:
+        await msg.reply_text(T.A_QN_SRC_SAVED.format(src=src_title, n=st.knum(n)))
+    except Exception:
+        pass
+    await msg.reply_text(T.A_QN_SAVED, reply_markup=K.back_to_panel_kb())
+
+
+async def _route_qntime(update, context, w: dict):
+    import events as evmod
+    storage = _storage(context)
+    msg = update.message
+    if not msg or not msg.text:
+        return
+    chat = msg.chat_id
+    step = w.get("step")
+    data = w.setdefault("data", {})
+    txt = msg.text.strip()
+    if step == "start":
+        t = evmod.parse_hhmm(txt)
+        if not t:
+            return await msg.reply_text(T.WIZ_QN_TIME_BAD)
+        data["start"] = t
+        w["step"] = "end"
+        storage.set_wizard(chat, w)
+        await msg.reply_text(T.WIZ_QN_END)
+        return
+    if step == "end":
+        t = evmod.parse_hhmm(txt)
+        if not t:
+            return await msg.reply_text(T.WIZ_QN_TIME_BAD)
+        ev = storage.get_event()
+        if not ev:
+            storage.clear_wizard(chat)
+            return await msg.reply_text(T.A_QN_NONE)
+        ev["start"] = data["start"]
+        ev["end"] = t
+        storage.save_event(ev)
+        storage.clear_wizard(chat)
+        await msg.reply_text(T.A_QN_TIME_SAVED.format(
+            start=evmod.clock_k(ev["start"]), end=evmod.clock_k(ev["end"])))

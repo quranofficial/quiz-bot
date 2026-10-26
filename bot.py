@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
-"""خاڵی دەستپێکی بۆتی کویز — کاری خۆی دەست پێدەکات، دوای POLL_SECONDS چرکە
-بە شێوەیەکی ساغلام دەوەستێت (بۆ GitHub Actions کە هەر ٥ خولەک جارێک دووبارە
-دەست پێدەکاتەوە و داتاکان لە ڕیپۆکەدا پارێزراون)."""
+"""خاڵی دەستپێکی بۆتی کویز — ٢٤/٧ پۆڵینگ دەکات (لە GitHub Actions بۆ ٥ کاتژمێر و ٥٠
+خولەک بەبێ پشوو، پاشان دانیشتی داهاتوو جێگەی دەگرێتەوە).
+
+تایبەتمەندییەکان:
+• Defaults(protect_content=True) — هیچ پەیامێکی بۆت ناتوانرێت forward یان save بکرێت.
+• concurrent_updates(True) — چەندین بەکارهێنەر لە هەمان کاتدا وەڵام وەردەگرن.
+• خشتەی تاقیکردنەوەی شەوانە — هەر ٢٠ چرکە پشکنین، لە کۆتاییدا ڕیزبەندی بۆ بەژداران.
+"""
 
 import asyncio
 import inspect
@@ -11,11 +16,15 @@ import sys
 
 from telegram import BotCommand, Update
 from telegram.ext import (Application, CallbackQueryHandler, CommandHandler,
-                          ContextTypes, MessageHandler, filters)
+                          ContextTypes, Defaults, MessageHandler, filters)
+from telegram.request import HTTPXRequest
 
 import config
+import events as evmod
 import handlers_admin
 import handlers_user
+import keyboards as K
+import storage as st
 import texts as T
 from gitsync import GitSync
 from storage import Storage
@@ -51,7 +60,7 @@ async def _post_init(app: Application) -> None:
         ])
     except Exception as e:
         log.warning("set_my_commands: %s", e)
-    log.info("بۆت ئامادەیە ✅")
+    log.info("بۆت ئامادەیە ✅ (protect_content=ON, concurrent_updates=ON)")
 
 
 async def _error(update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -67,6 +76,48 @@ async def _error(update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 pass
         os._exit(0)
     log.error("هەڵەیەک ڕوویدا: %s", err, exc_info=err)
+
+
+# ---------------- خشتەی تاقیکردنەوەی شەوانە ----------------
+
+async def _event_tick(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """هەر ٢٠ چرکە: لە کۆتایی تاقیکردنەوەی شەوانە ڕیزبەندی بۆ بەژداران دەنێردرێت."""
+    try:
+        storage = context.bot_data["storage"]
+        ev = storage.get_event()
+        if not ev or not ev.get("enabled"):
+            return
+        date = evmod.today_str()
+        if (ev.get("announced") or {}).get(date):
+            return
+        if evmod.status(ev) != evmod.STATUS_OVER:
+            return
+        day = (ev.get("results") or {}).get(date) or {}
+        if not day:
+            ev.setdefault("announced", {})[date] = True
+            evmod.cleanup(ev)
+            storage.save_event(ev)
+            return
+        rows = evmod.leaderboard(day)
+        text = evmod.fmt_leaderboard(rows, ev.get("title", "تاقیکردنەوەی شەوانە"))
+        # ناردن بۆ هەموو بەژداران
+        for uid, _ in rows:
+            try:
+                await context.bot.send_message(int(uid), text, parse_mode="HTML")
+            except Exception:
+                pass
+        # ناردن بۆ ئادمینەکان
+        for aid in storage.all_admin_ids():
+            try:
+                await context.bot.send_message(aid, text, parse_mode="HTML")
+            except Exception:
+                pass
+        ev.setdefault("announced", {})[date] = True
+        evmod.cleanup(ev)
+        storage.save_event(ev)
+        log.info("ڕیزبەندی تاقیکردنەوەی شەوانە بڵاوکرایەوە (%s بەژدار).", len(rows))
+    except Exception as e:
+        log.error("event_tick: %s", e, exc_info=True)
 
 
 # ---------------- مسڕەری دوگمەکان (Callback router) ----------------
@@ -92,6 +143,11 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return await handlers_user.cb_nav(q, context, data[4:])
         if data.startswith("quiz:"):
             return await handlers_user.cb_quiz(q, context, data[5:])
+        if data.startswith("qs:"):
+            parts = data.split(":")
+            if len(parts) == 3:
+                return await handlers_user.cb_qs(q, context, parts[1], parts[2])
+            return
         if data.startswith("ans:"):
             parts = data.split(":")
             if len(parts) == 3:
@@ -106,12 +162,89 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         if data.startswith("pg:"):
             return await handlers_user.cb_page(q, context, data[3:])
 
+        # ---------- تۆمارکردن و پرسیار بکە (لای بەکارهێنەر) ----------
+        if data == "ask" or data.startswith("ask:"):
+            return await handlers_user.cb_ask(q, context, data)
+        if data.startswith("reg:"):
+            return await handlers_user.cb_reg(q, context, data[4:])
+
+        # ---------- تاقیکردنەوەی تایبەت / ڕاپۆرت / فڵاش کارد / شەوانە / ئامار ----------
+        if data == "mq" or data.startswith("mq:"):
+            return await handlers_user.cb_mq(q, context, data)
+        if data == "rp" or data.startswith("rp:pick:") or data == "rp:skip":
+            return await handlers_user.cb_report(q, context, data)
+        if data == "fc" or data.startswith("fc:"):
+            return await handlers_user.cb_fc(q, context, data)
+        if data == "qn" or data.startswith("qn:play") or data == "qn:results":
+            return await handlers_user.cb_qn(q, context, data)
+        if data == "mystats":
+            return await handlers_user.cb_mystats(q, context)
+
         # ---------- ئادمین ----------
         if not storage.is_admin(q.from_user.id):
             return await handlers_user.alert(q, T.ADMIN_ONLY)
 
         if data == "adm":
             return await handlers_admin.cb_home(q, context)
+
+        if data == "admtk":
+            return await handlers_admin.cb_tickets(q, context)
+        if data.startswith("tk:"):
+            return await handlers_admin.cb_ticket(q, context, data[3:])
+        if data == "impjson":
+            return await handlers_admin.start_import_json(q, context)
+        if data == "settname":
+            return await handlers_admin.start_set_teacher(q, context)
+
+        # ---------- ڕاپۆرتەکان (ئادمین) ----------
+        if data == "admrp":
+            return await handlers_admin.cb_reports(q, context)
+        if data == "rp:clear":
+            return await handlers_admin.cb_report_clear(q, context)
+        if data.startswith("rp:"):
+            return await handlers_admin.cb_report(q, context, data[3:])
+
+        # ---------- بەکارهێنەران (ئادمین) ----------
+        if data == "usr":
+            return await handlers_admin.cb_users(q, context)
+        if data.startswith("usr:page:"):
+            try:
+                page = int(data[9:])
+            except ValueError:
+                page = 1
+            return await handlers_admin.cb_users(q, context, page)
+        if data.startswith("usr:view:"):
+            return await handlers_admin.cb_user_view(q, context, data[9:])
+        if data == "usr:search":
+            return await handlers_admin.start_user_search(q, context)
+
+        # ---------- تاقیکردنەوەی شەوانە (ئادمین) ----------
+        if data == "qnev":
+            return await handlers_admin.cb_qnev(q, context)
+        if data == "qn:new":
+            return await handlers_admin.qn_new(q, context)
+        if data == "qn:toggle":
+            return await handlers_admin.cb_qn_toggle(q, context)
+        if data == "qn:edittime":
+            return await handlers_admin.qn_edit_time(q, context)
+        if data == "qn:editsrc":
+            return await handlers_admin.qn_edit_src(q, context)
+        if data == "qn:del":
+            return await handlers_admin.cb_qn_delete(q, context)
+        if data == "qn:delok":
+            return await handlers_admin.cb_qn_delete_ok(q, context)
+        if data == "qnv:results":
+            return await handlers_admin.cb_qn_results(q, context)
+        if data == "qn:cancelwiz":
+            return await handlers_admin.cb_qn_cancel_wiz(q, context)
+        if data == "qn:countall":
+            return await handlers_admin.cb_qn_count(q, context, True)
+        if data.startswith("qnf:"):
+            return await handlers_admin.cb_qn_folder(q, context, data)
+
+        # ---------- نامەی گشتی ----------
+        if data == "bcast" or data.startswith("bcast:"):
+            return await handlers_admin.cb_bcast(q, context, data)
 
         if data == "admpgs":
             return await handlers_admin.cb_pages(q, context)
@@ -172,6 +305,8 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
         if data == "wx:skipimg":
             return await handlers_admin.wx_skipimg(q, context)
+        if data == "wx:nohl":
+            return await handlers_admin.wx_nohl(q, context)
         if data == "wx:done":
             return await handlers_admin.wx_done(q, context)
         if data == "wx:cancel":
@@ -194,22 +329,34 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 # ---------------- مسڕەری پەیامەکان ----------------
 
+# فڵۆوەکانی ئادمین — تەنها بۆ ئادمینەکان
+ADMIN_FLOWS = {"addq", "newfolder", "rename", "newpage", "additem", "addadmin",
+               "setnum", "editqtext", "editqimg", "tname", "tkreply", "impjson",
+               "rpreply", "usrsearch", "qnev", "qntime", "qnsrc", "bcast"}
+
+# فڵۆوەکانی بەکارهێنەری ئاسایی
+USER_FLOWS = {"reg", "ask", "quiznum", "report", "fcadd"}
+
+
 async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     msg = update.message
     if not msg or not msg.from_user:
         return
     storage = context.bot_data["storage"]
     try:
-        text = msg.text or ""
+        w = storage.get_wizard(msg.chat_id)
+        if w:
+            flow = w.get("flow")
+            # فلۆوی بەکارهێنەر
+            if flow in USER_FLOWS:
+                return await handlers_user.route_wizard(update, context, w)
+            # فلۆوی ئادمین
+            if flow in ADMIN_FLOWS and storage.is_admin(msg.from_user.id):
+                return await handlers_admin.route_wizard_extra(update, context, w)
 
-        if storage.is_admin(msg.from_user.id):
-            w = storage.get_wizard(msg.chat_id)
-            if w:
-                return await handlers_admin.route_wizard(update, context, w)
-
-        if text:
-            return await msg.reply_text(T.HINT_START)
-        return await msg.reply_text(T.HINT_START)
+        if msg.text:
+            return await msg.reply_text(T.HINT_START, reply_markup=K.home_only())
+        return await msg.reply_text(T.HINT_START, reply_markup=K.home_only())
     except Exception as e:
         log.error("message error: %s", e, exc_info=True)
         try:
@@ -236,8 +383,17 @@ def main():
     gitsync = GitSync(config.PROJECT_DIR, config.GIT_PUSH_DEBOUNCE)
     storage.on_change = gitsync.notify
 
+    # پاراستنی ناوەڕۆک: هیچ پەیامێک ناتوانرێت forward/save بکرێت
+    defaults = Defaults(protect_content=True)
+
+    # خێرایی: pool ی گەورەتر بۆ وەڵامدانەوەی چەندین بەکارهێنەر لە یەک چرکەدا
+    request = HTTPXRequest(connection_pool_size=64, pool_timeout=10.0)
+
     app = (Application.builder()
            .token(config.BOT_TOKEN)
+           .defaults(defaults)
+           .request(request)
+           .concurrent_updates(True)
            .post_init(_post_init)
            .post_shutdown(_on_shutdown)
            .build())
@@ -256,8 +412,13 @@ def main():
                                     | filters.PHOTO | filters.Document.ALL),
         on_message))
 
+    # خشتەی تاقیکردنەوەی شەوانە — هەر ٢٠ چرکە
+    if app.job_queue:
+        app.job_queue.run_repeating(_event_tick, interval=20, first=10)
+
     app.job_queue.run_once(_auto_stop, when=config.POLL_SECONDS)
-    log.info("بۆت کاری خۆی دەست پێکرد (POLL_SECONDS=%s چرکە)...", config.POLL_SECONDS)
+    log.info("بۆت کاری خۆی دەست پێکرد (POLL_SECONDS=%s چرکە — مۆدی ٢٤/٧)...",
+             config.POLL_SECONDS)
     app.run_polling(drop_pending_updates=False, allowed_updates=Update.ALL_TYPES)
 
 

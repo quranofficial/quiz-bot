@@ -8,17 +8,26 @@ import secrets
 import shutil
 import threading
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import config
 
+DEFAULT_TEACHER = "ئارام عبدالرزاق"
+
 DEFAULT_DB: Dict[str, Any] = {
-    "settings": {"questions_per_quiz": 0},  # 0 = هەموو پرسیارەکانی بەشەکە
+    "settings": {"questions_per_quiz": 0,          # 0 = هەموو پرسیارەکانی بەشەکە
+                 "teacher_name": DEFAULT_TEACHER,   # ناوی مامۆستا لە تۆمارکردندا
+                 "ticket_seq": 0,                   # ژمێریاری پرسیارەکانی بەکارهێنەران
+                 "report_seq": 0},                  # ژمێریاری ڕاپۆرتەکانی کێشە
     "admins": [],                            # لیستی ID ی ئادمینەکان (جگە لە خاوەن)
     "tree": [],                              # دارچینی بەش و پرسیارەکان
     "pages": [],                             # پەڕەکانی زانیاری (تێبینیەکان)
+    "users": {},                             # پرۆفایلی بەکارهێنەرانی تۆمارکراو
+    "tickets": {},                           # پرسیارەکانی بەکارهێنەران (پرسیار بکە)
+    "reports": {},                           # ڕاپۆرتەکانی کێشەی پرسیارەکان
+    "events": {},                            # تاقیکردنەوەی شەوانە (کویزی کاتدار)
     "sessions": {},                          # دانیشتە چالاکەکانی کویز
-    "wizard": {},                            # دۆخی ویزاردی ئادمین
+    "wizard": {},                            # دۆخی ویزاردەکان (ئادمین + بەکارهێنەر)
     "meta": {"updated_at": 0},
 }
 
@@ -147,11 +156,15 @@ class Storage:
         for key in ("admins", "tree", "pages"):
             if not isinstance(data.get(key), list):
                 data[key] = []
-        for key in ("sessions", "wizard"):
+        for key in ("sessions", "wizard", "users", "tickets", "reports", "events"):
             if not isinstance(data.get(key), dict):
                 data[key] = {}
         if not isinstance(data.get("settings"), dict):
-            data["settings"] = {"questions_per_quiz": 0}
+            data["settings"] = {}
+        data["settings"].setdefault("questions_per_quiz", 0)
+        data["settings"].setdefault("teacher_name", DEFAULT_TEACHER)
+        data["settings"].setdefault("ticket_seq", 0)
+        data["settings"].setdefault("report_seq", 0)
         return data
 
     def db(self) -> Dict[str, Any]:
@@ -174,7 +187,8 @@ class Storage:
     # ---- بەشەکان (دارچین) ----
 
     def add_folder(self, parent_id: Optional[str], title: str) -> dict:
-        node = {"id": new_id("f"), "type": "folder", "title": title, "children": []}
+        node = {"id": new_id("f"), "type": "folder", "title": (title or "").strip()[:60],
+                "children": []}
         if not parent_id or parent_id == "root":
             self._db["tree"].append(node)
         else:
@@ -325,6 +339,215 @@ class Storage:
     def set_questions_per_quiz(self, n: int):
         self._db["settings"]["questions_per_quiz"] = int(n)
         self.save()
+
+    def get_teacher_name(self) -> str:
+        return self._db["settings"].get("teacher_name") or DEFAULT_TEACHER
+
+    def set_teacher_name(self, name: str):
+        self._db["settings"]["teacher_name"] = (name or "").strip()[:60] or DEFAULT_TEACHER
+        self.save()
+
+    # ---- بەکارهێنەرانی تۆمارکراو ----
+
+    def get_user(self, uid) -> Optional[dict]:
+        return self._db["users"].get(str(uid))
+
+    def save_user(self, uid, profile: dict) -> dict:
+        profile["uid"] = int(uid) if str(uid).isdigit() else uid
+        self._db["users"][str(uid)] = profile
+        self.save()
+        return profile
+
+    def count_users(self) -> int:
+        return len(self._db["users"])
+
+    # ---- پرسیارەکانی بەکارهێنەران (پرسیار بکە) ----
+
+    def next_ticket_id(self) -> int:
+        self._db["settings"]["ticket_seq"] = int(self._db["settings"].get("ticket_seq", 0)) + 1
+        return self._db["settings"]["ticket_seq"]
+
+    def create_ticket(self, ticket: dict) -> dict:
+        self._db["tickets"][str(ticket["id"])] = ticket
+        self.save()
+        return ticket
+
+    def get_ticket(self, tid) -> Optional[dict]:
+        return self._db["tickets"].get(str(tid))
+
+    def save_ticket(self, ticket: dict):
+        self._db["tickets"][str(ticket["id"])] = ticket
+        self.save()
+
+    def open_tickets(self) -> List[dict]:
+        out = [t for t in self._db["tickets"].values() if t.get("status") != "closed"]
+        out.sort(key=lambda t: t.get("id", 0), reverse=True)
+        return out
+
+    def count_open_tickets(self) -> int:
+        return len(self.open_tickets())
+
+    # ---- ڕاپۆرتەکانی کێشە (پرسیاری گومانلێکراو لە کۆتایی کویز) ----
+
+    def next_report_id(self) -> int:
+        self._db["settings"]["report_seq"] = int(self._db["settings"].get("report_seq", 0)) + 1
+        return self._db["settings"]["report_seq"]
+
+    def create_report(self, report: dict) -> dict:
+        self._db["reports"][str(report["id"])] = report
+        self.save()
+        return report
+
+    def get_report(self, rid) -> Optional[dict]:
+        return self._db["reports"].get(str(rid))
+
+    def save_report(self, report: dict):
+        self._db["reports"][str(report["id"])] = report
+        self.save()
+
+    def all_reports(self) -> List[dict]:
+        out = list(self._db["reports"].values())
+        out.sort(key=lambda r: r.get("id", 0), reverse=True)
+        return out
+
+    def open_reports(self) -> List[dict]:
+        """ئەوانەی هێشتا داخراون یان وەڵام نەدراون — سەرەتا نوێترین."""
+        out = [r for r in self._db["reports"].values()
+               if r.get("status") in ("open", "replied")]
+        out.sort(key=lambda r: r.get("id", 0), reverse=True)
+        return out
+
+    def count_open_reports(self) -> int:
+        return len(self.open_reports())
+
+    def delete_report(self, rid) -> bool:
+        key = str(rid)
+        if key in self._db["reports"]:
+            del self._db["reports"][key]
+            self.save()
+            return True
+        return False
+
+    def clear_closed_reports(self) -> int:
+        """سڕینەوەی هەموو ڕاپۆرتە داخراوەکان — ژمارەی سڕدراوەکان دەگەڕێنێتەوە."""
+        closed = [k for k, r in self._db["reports"].items() if r.get("status") == "closed"]
+        for k in closed:
+            del self._db["reports"][k]
+        if closed:
+            self.save()
+        return len(closed)
+
+    # ---- تاقیکردنەوەی شەوانە (کویزی کاتدار) ----
+
+    def get_event(self) -> Optional[dict]:
+        return self._db["events"].get("current")
+
+    def save_event(self, event: Optional[dict]):
+        if event is None:
+            self._db["events"].pop("current", None)
+        else:
+            self._db["events"]["current"] = event
+        self.save()
+
+    # ---- فڵاش کاردی بەکارهێنەران ----
+
+    def get_flashcards(self, uid) -> List[dict]:
+        u = self.get_user(uid)
+        return (u or {}).get("flashcards") or []
+
+    def add_flashcard(self, uid, front: str, back: str, photo: Optional[str]) -> dict:
+        u = self.get_user(uid)
+        if u is None:
+            u = self.save_user(uid, {"name": "بەکارهێنەر"})
+        card = {"id": new_id("c"), "front": front, "back": back, "photo": photo}
+        u.setdefault("flashcards", []).append(card)
+        self.save()
+        return card
+
+    def delete_flashcard(self, uid, card_id: str) -> bool:
+        u = self.get_user(uid)
+        if not u or not u.get("flashcards"):
+            return False
+        before = len(u["flashcards"])
+        u["flashcards"] = [c for c in u["flashcards"] if c.get("id") != card_id]
+        changed = len(u["flashcards"]) != before
+        if changed:
+            self.save()
+        return changed
+
+    # ---- ئامارەکانی بەکارهێنەران ----
+
+    def record_quiz_result(self, uid, folder_title: str, correct: int, total: int):
+        """تۆمارکردنی ئەنجامی کویز لە پرۆفایلی بەکارهێنەردا (بۆ ئاماری ئادمین)."""
+        u = self.get_user(uid)
+        if u is None:
+            return
+        stt = u.setdefault("stats", {})
+        stt["quizzes"] = int(stt.get("quizzes", 0)) + 1
+        stt["total"] = int(stt.get("total", 0)) + int(total)
+        stt["correct"] = int(stt.get("correct", 0)) + int(correct)
+        stt["last_quiz_at"] = int(time.time())
+        by = stt.setdefault("by_folder", {})
+        key = folder_title or "—"
+        cell = by.setdefault(key, {"q": 0, "c": 0})
+        cell["q"] += int(total)
+        cell["c"] += int(correct)
+        self.save()
+
+    def find_users(self, query: str) -> List[dict]:
+        """گەڕان بە ناو، یوزەرنام یان ID — گەڕانەوەی لیستی هاوتاکان."""
+        q = (query or "").strip().lower()
+        if not q:
+            return []
+        q2 = q.translate(_WESTERN_TABLE)
+        out = []
+        for u in self._db["users"].values():
+            hay = " ".join([
+                str(u.get("name") or ""), str(u.get("username") or ""),
+                str(u.get("uid") or ""),
+            ]).lower()
+            if q in hay or q2 in hay:
+                out.append(u)
+        out.sort(key=lambda u: u.get("joined", 0), reverse=True)
+        return out
+
+    def users_sorted(self) -> List[dict]:
+        """هەموو بەکارهێنەران بە دوایین چالاکی (یان بەیەکەوەبوون)."""
+        out = list(self._db["users"].values())
+        out.sort(key=lambda u: max(u.get("stats", {}).get("last_quiz_at", 0),
+                                   u.get("joined", 0)), reverse=True)
+        return out
+
+    def set_last_quiz(self, uid, info: dict):
+        """هەڵگرتنی زانیاری دوایین کویز — بۆ دوگمەی ڕاپۆرتکردنی کێشە."""
+        u = self.get_user(uid)
+        if u is None:
+            return
+        u["last_quiz"] = info
+        self.save()
+
+    def all_admin_ids(self) -> List[int]:
+        ids = []
+        if config.OWNER_ID is not None:
+            ids.append(config.OWNER_ID)
+        for a in self._db["admins"]:
+            if a not in ids:
+                ids.append(a)
+        return ids
+
+    # ---- هێنانی JSON: دۆزینەوە یان دروستکردنی بەش بە هەمان ناو ----
+
+    def ensure_folder(self, parent_id: Optional[str], title: str) -> Tuple[dict, bool]:
+        """بەشێک بەم ناوە لەم باوکەدا دەدۆزێتەوە؛ ئەگەر نەبوو دروستی دەکات.
+        گەڕانەوە: (نۆد، دروستکرا یان نا)"""
+        title = (title or "").strip()
+        parent = (find_node(self._db["tree"], parent_id)
+                  if parent_id not in (None, "root") else None)
+        siblings = parent.get("children", []) if parent else self._db["tree"]
+        for n in siblings:
+            if n.get("type") == "folder" and (n.get("title") or "").strip() == title:
+                return n, False
+        return self.add_folder(parent_id, title), True
 
     # ---- دانیشتەکانی کویز ----
 
