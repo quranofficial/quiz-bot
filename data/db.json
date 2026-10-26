@@ -89,17 +89,8 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "reg",
-   "step": "name",
-   "data": {
-    "name": "Ismahil",
-    "redo": true
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793034760
+  "updated_at": 1793037823
  }
 }
