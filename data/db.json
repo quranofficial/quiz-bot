@@ -56,13 +56,14 @@
  "wizard": {
   "1373569356": {
    "flow": "qnev",
-   "step": "title",
+   "step": "start",
    "data": {
-    "edit": false
+    "edit": false,
+    "title": "تێست"
    }
   }
  },
  "meta": {
-  "updated_at": 1793038571
+  "updated_at": 1793038578
  }
 }
