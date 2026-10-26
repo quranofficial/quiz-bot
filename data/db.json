@@ -13,37 +13,6 @@
    "title": "بەندی یەکەم",
    "children": [
     {
-     "id": "f_sample_part",
-     "type": "folder",
-     "title": "کەرتی یەکەم",
-     "children": [
-      {
-       "id": "q_sample_one",
-       "type": "question",
-       "text": "کوردستان دەوڵەتە؟",
-       "image": null,
-       "options": [
-        {
-         "text": "نەخێر",
-         "correct": false
-        },
-        {
-         "text": "بەڵێ",
-         "correct": true
-        },
-        {
-         "text": "نازانم",
-         "correct": false
-        },
-        {
-         "text": "A+B ڕاستە",
-         "correct": false
-        }
-       ]
-      }
-     ]
-    },
-    {
      "id": "fbaa5f163",
      "type": "folder",
      "title": "کەرتی دووەم",
@@ -141,6 +110,6 @@
  "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793041019
+  "updated_at": 1793041052
  }
 }
