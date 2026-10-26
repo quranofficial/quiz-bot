@@ -105,17 +105,17 @@
  "wizard": {
   "1373569356": {
    "flow": "addq",
-   "step": "highlight",
+   "step": "options",
    "data": {
     "folder_id": "f06de57a4",
     "image": "AgACAgIAAxkBAAPXat-jCtCKeZm-HSaPwep_ZVZdvh0AAlAkaxtpTPlKY6EnAbRX_MQBAAMCAAN4AAM9BA",
-    "text": "ژمارەی ئێسکەکان: جەستەی مرۆڤێکی پێگەیشتوو لە ___ ئێسکی جیاواز پێکدێت.",
+    "text": "ژمارەی ئێسکەکان: جەستەی مرۆڤێکی پێگەیشتوو لە ___ ئێسکی {{جیاواز}} پێکدێت.",
     "options": [],
     "prompt": 214
    }
   }
  },
  "meta": {
-  "updated_at": 1793041178
+  "updated_at": 1793041199
  }
 }
