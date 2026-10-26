@@ -91,8 +91,17 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "1373569356": {
+   "flow": "newfolder",
+   "step": "title",
+   "data": {
+    "parent": "root",
+    "prompt": 158
+   }
+  }
+ },
  "meta": {
-  "updated_at": 1793040736
+  "updated_at": 1793040744
  }
 }
