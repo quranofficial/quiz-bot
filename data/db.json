@@ -62,9 +62,12 @@
  "users": {
   "1373569356": {
    "name": "Ismahil",
-   "teacher": null,
+   "teacher": false,
    "username": "@ismahil_312",
    "joined": 1793034679,
+   "stats": {},
+   "flashcards": [],
+   "last_quiz": null,
    "uid": 1373569356
   },
   "8634363348": {
@@ -89,17 +92,8 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "reg",
-   "step": "name",
-   "data": {
-    "name": "Ismahil",
-    "redo": true
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793037830
+  "updated_at": 1793037836
  }
 }
