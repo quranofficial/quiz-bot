@@ -107,9 +107,26 @@
    "teacher": false,
    "username": "@Rio_K101",
    "joined": 1793040674,
-   "stats": {},
+   "stats": {
+    "quizzes": 1,
+    "total": 1,
+    "correct": 1,
+    "last_quiz_at": 1793041285,
+    "by_folder": {
+     "کویزی گشتی": {
+      "q": 1,
+      "c": 1
+     }
+    }
+   },
    "flashcards": [],
-   "last_quiz": null,
+   "last_quiz": {
+    "qids": [
+     "q0f93726b"
+    ],
+    "title": "کویزی گشتی",
+    "ts": 1793041285
+   },
    "uid": 8634363348
   },
   "1373569356": {
@@ -126,25 +143,9 @@
  "tickets": {},
  "reports": {},
  "events": {},
- "sessions": {
-  "8634363348": {
-   "uid": 8634363348,
-   "folder_id": "root",
-   "folder_title": "کویزی گشتی",
-   "qids": [
-    "q0f93726b"
-   ],
-   "idx": 0,
-   "answers": [],
-   "ts": 1793041265.725685,
-   "src": "section",
-   "event_id": null,
-   "date": null,
-   "extra": {}
-  }
- },
+ "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793041265
+  "updated_at": 1793041285
  }
 }
