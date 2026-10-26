@@ -43,4 +43,5 @@ jobs:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           OWNER_ID: ${{ secrets.OWNER_ID }}
           POLL_SECONDS: "21000"
+          TZ: "Asia/Baghdad"
         run: python bot.py
