@@ -124,8 +124,10 @@
  "wizard": {
   "1373569356": {
    "flow": "reg",
-   "step": "name",
-   "data": {}
+   "step": "teacher",
+   "data": {
+    "name": "Ismahil"
+   }
   },
   "8634363348": {
    "flow": "reg",
@@ -134,6 +136,6 @@
   }
  },
  "meta": {
-  "updated_at": 1793046242
+  "updated_at": 1793046394
  }
 }
