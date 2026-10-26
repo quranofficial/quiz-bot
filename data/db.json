@@ -69,14 +69,27 @@
    "flashcards": [],
    "last_quiz": null,
    "uid": 8634363348
+  },
+  "1373569356": {
+   "name": "Ismahil",
+   "teacher": null,
+   "username": "@ismahil_312",
+   "joined": 1793040691,
+   "uid": 1373569356
   }
  },
  "tickets": {},
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "1373569356": {
+   "flow": "reg",
+   "step": "name",
+   "data": {}
+  }
+ },
  "meta": {
-  "updated_at": 1793040682
+  "updated_at": 1793040691
  }
 }
