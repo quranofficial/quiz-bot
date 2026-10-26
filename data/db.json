@@ -151,17 +151,8 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "bcast",
-   "step": "confirm",
-   "data": {
-    "text": "...",
-    "photo": null
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793046775
+  "updated_at": 1793046777
  }
 }
