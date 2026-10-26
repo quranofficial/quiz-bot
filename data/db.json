@@ -48,6 +48,12 @@
      "type": "folder",
      "title": "کەرتی دووەم",
      "children": []
+    },
+    {
+     "id": "f06de57a4",
+     "type": "folder",
+     "title": "کەرتی سێیەم",
+     "children": []
     }
    ]
   },
@@ -133,17 +139,8 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "newfolder",
-   "step": "title",
-   "data": {
-    "parent": "f_sample_sec",
-    "prompt": 196
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793040974
+  "updated_at": 1793040979
  }
 }
