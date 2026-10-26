@@ -126,9 +126,25 @@
  "tickets": {},
  "reports": {},
  "events": {},
- "sessions": {},
+ "sessions": {
+  "8634363348": {
+   "uid": 8634363348,
+   "folder_id": "root",
+   "folder_title": "کویزی گشتی",
+   "qids": [
+    "q0f93726b"
+   ],
+   "idx": 0,
+   "answers": [],
+   "ts": 1793041265.725685,
+   "src": "section",
+   "event_id": null,
+   "date": null,
+   "extra": {}
+  }
+ },
  "wizard": {},
  "meta": {
-  "updated_at": 1793041238
+  "updated_at": 1793041265
  }
 }
