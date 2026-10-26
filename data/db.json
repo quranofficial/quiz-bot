@@ -167,9 +167,25 @@
  "tickets": {},
  "reports": {},
  "events": {},
- "sessions": {},
+ "sessions": {
+  "1373569356": {
+   "uid": 1373569356,
+   "folder_id": "f_sample_sec",
+   "folder_title": "بەندی یەکەم",
+   "qids": [
+    "q0f93726b"
+   ],
+   "idx": 0,
+   "answers": [],
+   "ts": 1793043662.0009587,
+   "src": "section",
+   "event_id": null,
+   "date": null,
+   "extra": {}
+  }
+ },
  "wizard": {},
  "meta": {
-  "updated_at": 1793043524
+  "updated_at": 1793043662
  }
 }
