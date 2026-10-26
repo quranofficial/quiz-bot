@@ -101,52 +101,13 @@
    ]
   }
  ],
- "users": {
-  "1373569356": {
-   "name": "har kasek",
-   "teacher": true,
-   "username": "@ismahil_312",
-   "joined": 1793040691,
-   "stats": {
-    "quizzes": 2,
-    "total": 2,
-    "correct": 0,
-    "last_quiz_at": 1793043677,
-    "by_folder": {
-     "کەرتی یەکەم": {
-      "q": 1,
-      "c": 0
-     },
-     "بەندی یەکەم": {
-      "q": 1,
-      "c": 0
-     }
-    }
-   },
-   "flashcards": [
-    {
-     "id": "cc28eca7f",
-     "front": "Jsjs",
-     "back": "Jsjs",
-     "photo": null
-    }
-   ],
-   "last_quiz": {
-    "qids": [
-     "q0f93726b"
-    ],
-    "title": "بەندی یەکەم",
-    "ts": 1793043677
-   },
-   "uid": 1373569356
-  }
- },
+ "users": {},
  "tickets": {},
  "reports": {},
  "events": {},
  "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793046198
+  "updated_at": 1793046214
  }
 }
