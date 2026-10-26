@@ -172,44 +172,36 @@
    "teacher": false,
    "username": "@Rio_K101",
    "joined": 1793046242,
-   "stats": {},
+   "stats": {
+    "quizzes": 1,
+    "total": 2,
+    "correct": 1,
+    "last_quiz_at": 1793046897,
+    "by_folder": {
+     "تاقیکردنەوەی گشتی": {
+      "q": 2,
+      "c": 1
+     }
+    }
+   },
    "flashcards": [],
-   "last_quiz": null,
+   "last_quiz": {
+    "qids": [
+     "q0f93726b",
+     "q090342db"
+    ],
+    "title": "تاقیکردنەوەی گشتی",
+    "ts": 1793046897
+   },
    "uid": 8634363348
   }
  },
  "tickets": {},
  "reports": {},
  "events": {},
- "sessions": {
-  "8634363348": {
-   "uid": 8634363348,
-   "folder_id": "root",
-   "folder_title": "تاقیکردنەوەی گشتی",
-   "qids": [
-    "q0f93726b",
-    "q090342db"
-   ],
-   "idx": 1,
-   "answers": [
-    {
-     "qid": "q0f93726b",
-     "correct": false,
-     "qtext": "ژمارەی ئێسکەکان: جەستەی مرۆڤێکی پێگەیشتوو لە ___ ئێسکی جیاواز پێکدێت.",
-     "chosen": "D) D. ٢٠٧",
-     "right": "C) C. ٢٠٦",
-     "has_image": true
-    }
-   ],
-   "ts": 1793046887.691198,
-   "src": "section",
-   "event_id": null,
-   "date": null,
-   "extra": {}
-  }
- },
+ "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793046890
+  "updated_at": 1793046897
  }
 }
