@@ -119,7 +119,14 @@
      }
     }
    },
-   "flashcards": [],
+   "flashcards": [
+    {
+     "id": "cda993481",
+     "front": "ژمارەی ئێسکەکان: جەستەی مرۆڤێکی پێگەیشتوو لە __ ئێسکی جیاواز پێکدێت.",
+     "back": "٢٠٦ ئێسک",
+     "photo": "AgACAgIAAxkBAAPXat-jCtCKeZm-HSaPwep_ZVZdvh0AAlAkaxtpTPlKY6EnAbRX_MQBAAMCAAN4AAM9BA"
+    }
+   ],
    "last_quiz": {
     "qids": [
      "q0f93726b"
@@ -146,17 +153,9 @@
    "flow": "reg",
    "step": "name",
    "data": {}
-  },
-  "1373569356": {
-   "flow": "fcadd",
-   "step": "photo",
-   "data": {
-    "front": "ژمارەی ئێسکەکان: جەستەی مرۆڤێکی پێگەیشتوو لە __ ئێسکی جیاواز پێکدێت.",
-    "back": "٢٠٦ ئێسک"
-   }
   }
  },
  "meta": {
-  "updated_at": 1793046594
+  "updated_at": 1793046604
  }
 }
