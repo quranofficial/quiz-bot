@@ -105,10 +105,10 @@
  "wizard": {
   "1373569356": {
    "flow": "addq",
-   "step": "image",
+   "step": "text",
    "data": {
     "folder_id": "f06de57a4",
-    "image": null,
+    "image": "AgACAgIAAxkBAAPXat-jCtCKeZm-HSaPwep_ZVZdvh0AAlAkaxtpTPlKY6EnAbRX_MQBAAMCAAN4AAM9BA",
     "text": "",
     "options": [],
     "prompt": 214
@@ -116,6 +116,6 @@
   }
  },
  "meta": {
-  "updated_at": 1793041080
+  "updated_at": 1793041162
  }
 }
