@@ -53,8 +53,14 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "1373569356": {
+   "flow": "tname",
+   "step": "name",
+   "data": {}
+  }
+ },
  "meta": {
-  "updated_at": 1793038186
+  "updated_at": 1793038259
  }
 }
