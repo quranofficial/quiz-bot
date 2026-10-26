@@ -107,9 +107,26 @@
    "teacher": true,
    "username": "@ismahil_312",
    "joined": 1793046229,
-   "stats": {},
+   "stats": {
+    "quizzes": 1,
+    "total": 1,
+    "correct": 1,
+    "last_quiz_at": 1793046528,
+    "by_folder": {
+     "کەرتی یەکەم": {
+      "q": 1,
+      "c": 1
+     }
+    }
+   },
    "flashcards": [],
-   "last_quiz": null,
+   "last_quiz": {
+    "qids": [
+     "q0f93726b"
+    ],
+    "title": "کەرتی یەکەم",
+    "ts": 1793046528
+   },
    "uid": 1373569356
   },
   "8634363348": {
@@ -123,23 +140,7 @@
  "tickets": {},
  "reports": {},
  "events": {},
- "sessions": {
-  "1373569356": {
-   "uid": 1373569356,
-   "folder_id": "f06de57a4",
-   "folder_title": "کەرتی یەکەم",
-   "qids": [
-    "q0f93726b"
-   ],
-   "idx": 0,
-   "answers": [],
-   "ts": 1793046518.1746213,
-   "src": "section",
-   "event_id": null,
-   "date": null,
-   "extra": {}
-  }
- },
+ "sessions": {},
  "wizard": {
   "8634363348": {
    "flow": "reg",
@@ -148,6 +149,6 @@
   }
  },
  "meta": {
-  "updated_at": 1793046518
+  "updated_at": 1793046528
  }
 }
