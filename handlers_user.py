@@ -213,7 +213,7 @@ async def cb_quiz(query, context, fid: str):
 
 
 def _make_session(user, title, questions, folder_id, src="section",
-                  event_id=None, date=None):
+                  event_id=None, date=None, extra=None):
     return {
         "uid": user.id,
         "folder_id": folder_id or "root",
@@ -225,14 +225,16 @@ def _make_session(user, title, questions, folder_id, src="section",
         "src": src,
         "event_id": event_id,
         "date": date,
+        "extra": extra or {},   # پرسیارەکانی بەنکۆی شەوانە (دەرەوەی دارچین)
     }
 
 
 async def _launch_quiz(context, chat_id, user, title, questions, folder_id,
-                       src="section", event_id=None, date=None):
+                       src="section", event_id=None, date=None, extra=None):
     storage = _storage(context)
     random.shuffle(questions)
-    session = _make_session(user, title, questions, folder_id, src, event_id, date)
+    session = _make_session(user, title, questions, folder_id, src, event_id, date,
+                            extra=extra)
     storage.clean_old_sessions()
     storage.set_session(user.id, session)
     try:
@@ -282,17 +284,22 @@ async def cb_qs(query, context, fid: str, mode: str):
 async def send_quiz_question(context, chat_id, session):
     storage = _storage(context)
     tree = storage.db()["tree"]
+    extra = session.get("extra") or {}
 
-    # پرسیارە سڕدراوەکان بە تێپەڕ ببە
+    # پرسیارە سڕدراوەکان بە تێپەڕ ببە (پرسیارەکانی بەنکۆکە لە extra دا هەن)
     while session["idx"] < len(session["qids"]):
-        if st.find_node(tree, session["qids"][session["idx"]]):
+        qid = session["qids"][session["idx"]]
+        if st.find_node(tree, qid) or qid in extra:
             break
         session["idx"] += 1
 
     if session["idx"] >= len(session["qids"]):
         return await finish_quiz(context, chat_id, session)
 
-    q = st.find_node(tree, session["qids"][session["idx"]])
+    qid = session["qids"][session["idx"]]
+    q = st.find_node(tree, qid) or extra.get(qid)
+    if not q:
+        return await finish_quiz(context, chat_id, session)
     header = T.Q_PROGRESS.format(i=st.knum(session["idx"] + 1), n=st.knum(len(session["qids"])))
     qtext = (q.get("text") or "").strip()
     qtext_html = fmt.apply(qtext)
@@ -335,7 +342,8 @@ async def cb_answer(query, context, qid: str, idx: int):
             pass
         return
 
-    q = st.find_node(tree, qid)
+    extra = s.get("extra") or {}
+    q = st.find_node(tree, qid) or extra.get(qid)
     if not q:
         s["idx"] = s.get("idx", 0) + 1
         storage.set_session(uid, s)
@@ -839,14 +847,15 @@ async def route_reg(update: Update, context: ContextTypes.DEFAULT_TYPE, w: dict)
     storage = _storage(context)
     msg = update.message
     if not msg or not msg.from_user:
-        return
+        return False
     chat = msg.chat_id
     step = w.get("step")
 
     if step == "name":
         name = (msg.text or "").strip()
         if len(name) < 2 or len(name) > 40:
-            return await msg.reply_text(T.REG_NAME_ERR)
+            await msg.reply_text(T.REG_NAME_ERR)
+            return True
         w.setdefault("data", {})["name"] = st.trunc(name, 40)
         w["step"] = "teacher"
         storage.set_wizard(chat, w)
@@ -854,6 +863,8 @@ async def route_reg(update: Update, context: ContextTypes.DEFAULT_TYPE, w: dict)
             T.REG_TEACHER.format(name=w["data"]["name"],
                                  teacher=storage.get_teacher_name()),
             reply_markup=K.reg_teacher_kb())
+        return True
+    return False
 
 
 async def cb_reg(query, context, payload: str):
@@ -1065,7 +1076,7 @@ async def route_ask(update: Update, context: ContextTypes.DEFAULT_TYPE, w: dict)
     storage = _storage(context)
     msg = update.message
     if not msg:
-        return
+        return False
     chat = msg.chat_id
     step = w.get("step")
     d = w.setdefault("data", {})
@@ -1081,13 +1092,17 @@ async def route_ask(update: Update, context: ContextTypes.DEFAULT_TYPE, w: dict)
                 d["text"] = (msg.caption or "").strip()[:3500]
             changed = True
         if not changed:
-            return await msg.reply_text(
+            await msg.reply_text(
                 T.ASK_NEED_PHOTO if step == "photo" else T.ASK_NEED_TEXT)
+            return True
         if not (d.get("text") or "").strip():
-            return await msg.reply_text(T.ASK_NEED_TEXT)
+            await msg.reply_text(T.ASK_NEED_TEXT)
+            return True
         w["step"] = "review"
         storage.set_wizard(chat, w)
-        return await _send_review(context, chat, w, reply_to=msg)
+        await _send_review(context, chat, w, reply_to=msg)
+        return True
+    return False
 
 
 # ---------------- تاقیکردنەوەی شەوانە (لای بەکارهێنەر) ----------------
@@ -1124,8 +1139,18 @@ async def cb_qn(query, context, data: str):
             return await cb_qn(query, context, "qn")
         if played:
             return await _qn_show_results(query, context, ev, uid)
-        # دەستپێکردنی کویزی ئیڤێنت
+        # دەستپێکردنی کویزی ئیڤێنت — لە بەشەکان یان لە بەنکۆی پرسیارە نوێکان
         src = ev.get("src") or {}
+        title = ev.get("title", title)
+        if (src.get("type") or "folder") == "bank":
+            bank = ev.get("bank") or []
+            if not bank:
+                return await alert(query, T.NO_QUESTIONS, K.home_only())
+            questions = [dict(q) for q in bank]
+            extra = {q["id"]: q for q in questions}
+            return await _launch_quiz(context, chat_id, query.from_user, title,
+                                      questions, None, src="event",
+                                      event_id=ev.get("id"), date=date, extra=extra)
         fid = src.get("folder_id")
         folder = st.find_node(storage.db()["tree"], fid) if fid else None
         if not folder:
@@ -1178,33 +1203,51 @@ async def cb_mystats(query, context):
 # ---------------- ڕێگەکانی ویزاردی بەکارهێنەر ----------------
 
 async def route_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE, w: dict):
-    """فلۆوەکانی بەکارهێنەر: reg / ask / quiznum / report / fcadd"""
+    """فلۆوەکانی بەکارهێنەر: reg / ask / quiznum / report / fcadd / mq"""
     flow = w.get("flow")
     if flow == "reg":
-        return await route_reg(update, context, w)
-    if flow == "ask":
-        return await route_ask(update, context, w)
-    if flow == "quiznum":
-        return await _route_quiznum(update, context, w)
-    if flow == "report":
-        return await _route_report(update, context, w)
-    if flow == "fcadd":
-        return await _route_fcadd(update, context, w)
+        handled = await route_reg(update, context, w)
+    elif flow == "ask":
+        handled = await route_ask(update, context, w)
+    elif flow == "quiznum":
+        handled = await _route_quiznum(update, context, w)
+    elif flow == "report":
+        handled = await _route_report(update, context, w)
+    elif flow == "fcadd":
+        handled = await _route_fcadd(update, context, w)
+    else:
+        handled = False
+    # هیچ لقێک وەڵامی نەدەوە — بێدەنگ مەبە (چارەسەری بڕوان)
+    if not handled:
+        return await _wizard_fallback(update, context, w)
+
+
+async def _wizard_fallback(update, context, w: dict):
+    """کاتێک پەیامەکە لەگەڵ هیچ هەنگاوێکی ویزارد ناگونجێت — هەمیشە وەڵام بدەرەوە."""
+    msg = update.message
+    if not msg:
+        return
+    flow, step = w.get("flow"), w.get("step")
+    if flow == "reg" and step == "name":
+        return await msg.reply_text(T.REG_NAME_ERR)
+    return await msg.reply_text(T.WIZ_USE_BUTTONS)
 
 
 async def _route_quiznum(update, context, w: dict):
     storage = _storage(context)
     msg = update.message
     if not msg:
-        return
+        return False
     if not msg.text:
-        return await msg.reply_text(
+        await msg.reply_text(
             T.QS_NUM_BAD.format(n=st.knum((w.get("data") or {}).get("n", 1))))
+        return True
     d = w.get("data") or {}
     n = st.to_int(msg.text)
     avail = int(d.get("n") or 0)
     if n is None or n < 1 or (avail and n > avail):
-        return await msg.reply_text(T.QS_NUM_BAD.format(n=st.knum(avail or 1)))
+        await msg.reply_text(T.QS_NUM_BAD.format(n=st.knum(avail or 1)))
+        return True
     chat = msg.chat_id
     storage.clear_wizard(chat)
 
@@ -1215,26 +1258,34 @@ async def _route_quiznum(update, context, w: dict):
         questions = [q for q in questions if q and q.get("type") == "question"]
         random.shuffle(questions)
         questions = questions[:n]
-        return await _launch_quiz(context, chat, msg.from_user,
-                                  d.get("title") or T.MQ_TITLE_NAME, questions, None)
+        await _launch_quiz(context, chat, msg.from_user,
+                           d.get("title") or T.MQ_TITLE_NAME, questions, None)
+        return True
 
     title, all_questions = _collect_for_fid(storage, d.get("fid") or "root")
     if not all_questions:
-        return await msg.reply_text(T.NO_QUESTIONS)
+        await msg.reply_text(T.NO_QUESTIONS)
+        return True
     random.shuffle(all_questions)
     questions = all_questions[:n]
     fid = d.get("fid") or "root"
     await _launch_quiz(context, chat, msg.from_user, title, questions,
                        None if fid in ("", "root") else fid)
+    return True
 
 
 async def _route_report(update, context, w: dict):
     storage = _storage(context)
     msg = update.message
-    if not msg or not msg.text:
-        return await msg.reply_text(T.WIZ_NEED_TEXT)
+    if not msg:
+        return False
     if w.get("step") == "comment":
-        return await _send_report_msg(update, context, w, msg.text.strip()[:500])
+        if not msg.text:
+            await msg.reply_text(T.WIZ_NEED_TEXT)
+            return True
+        await _send_report_msg(update, context, w, msg.text.strip()[:500])
+        return True
+    return False
 
 
 async def _send_report_msg(update, context, w: dict, comment: str):
@@ -1275,35 +1326,41 @@ async def _route_fcadd(update, context, w: dict):
     storage = _storage(context)
     msg = update.message
     if not msg:
-        return
+        return False
     chat = msg.chat_id
     step = w.get("step")
     d = w.setdefault("data", {})
 
     if step == "front":
         if not (msg.text and msg.text.strip()):
-            return await msg.reply_text(T.FC_NEED_TEXT)
+            await msg.reply_text(T.FC_NEED_TEXT)
+            return True
         d["front"] = msg.text.strip()[:500]
         w["step"] = "back"
         storage.set_wizard(chat, w)
-        return await msg.reply_text(T.FC_BACK, reply_markup=K.fc_stop_kb())
+        await msg.reply_text(T.FC_BACK, reply_markup=K.fc_stop_kb())
+        return True
 
     if step == "back":
         if not (msg.text and msg.text.strip()):
-            return await msg.reply_text(T.FC_NEED_TEXT)
+            await msg.reply_text(T.FC_NEED_TEXT)
+            return True
         d["back"] = msg.text.strip()[:500]
         w["step"] = "photo"
         storage.set_wizard(chat, w)
-        return await msg.reply_text(T.FC_PHOTO, reply_markup=K.fc_photo_kb())
+        await msg.reply_text(T.FC_PHOTO, reply_markup=K.fc_photo_kb())
+        return True
 
     if step == "photo":
         if msg.photo:
             d["photo"] = msg.photo[-1].file_id
         else:
-            return await msg.reply_text(
+            await msg.reply_text(
                 "⚠️ تکایە وێنە بنێرە یان «⏭ بەبێ وێنە» بکە.")
+            return True
         card = storage.add_flashcard(msg.from_user.id, d.get("front", ""),
                                      d.get("back", ""), d.get("photo"))
         storage.clear_wizard(chat)
         await msg.reply_text(T.FC_SAVED, reply_markup=K.fc_menu(1))
-        return
+        return True
+    return False

@@ -361,6 +361,16 @@ class Storage:
     def count_users(self) -> int:
         return len(self._db["users"])
 
+    def count_teacher_users(self) -> Tuple[int, int]:
+        """(قوتابیەکان، ئەوانی تر) — لە وەڵامی پرسیاری تۆمارکردنەوە."""
+        students = others = 0
+        for u in self._db["users"].values():
+            if u.get("teacher") is True:
+                students += 1
+            else:
+                others += 1
+        return students, others
+
     # ---- پرسیارەکانی بەکارهێنەران (پرسیار بکە) ----
 
     def next_ticket_id(self) -> int:
@@ -448,6 +458,24 @@ class Storage:
         else:
             self._db["events"]["current"] = event
         self.save()
+
+    def add_event_bank_question(self, q: dict) -> int:
+        """پرسیارێک بۆ بەنکۆی تاقیکردنەوەی شەوانە زیاد دەکات — ژمارەی کۆی دەگەڕێنێتەوە."""
+        ev = self.get_event()
+        if not ev:
+            return 0
+        ev.setdefault("bank", []).append(q)
+        self.save()
+        return len(ev["bank"])
+
+    def pop_event_bank_question(self) -> int:
+        """دوایین پرسیاری بەنکۆکە دەسڕێتەوە — ماوەی ژمارە دەگەڕێنێتەوە."""
+        ev = self.get_event()
+        if not ev or not ev.get("bank"):
+            return 0
+        ev["bank"].pop()
+        self.save()
+        return len(ev.get("bank") or [])
 
     # ---- فڵاش کاردی بەکارهێنەران ----
 

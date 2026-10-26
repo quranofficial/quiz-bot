@@ -53,13 +53,19 @@ async def _on_shutdown(app: Application) -> None:
 
 async def _post_init(app: Application) -> None:
     try:
+        # بۆ هەموو بەکارهێنەران: تەنها /start و /help
         await app.bot.set_my_commands([
             BotCommand("start", "دەستپێکردن"),
-            BotCommand("admin", "پانێڵی ئادمین"),
             BotCommand("help", "ڕێنمایی"),
         ])
     except Exception as e:
         log.warning("set_my_commands: %s", e)
+    # بۆ ئادمینەکان: /admin + /start + /help
+    storage = app.bot_data.get("storage")
+    if storage:
+        import handlers_admin
+        for aid in storage.all_admin_ids():
+            await handlers_admin.ensure_admin_commands(app.bot, aid)
     log.info("بۆت ئامادەیە ✅ (protect_content=ON, concurrent_updates=ON)")
 
 
@@ -193,8 +199,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return await handlers_admin.cb_ticket(q, context, data[3:])
         if data == "impjson":
             return await handlers_admin.start_import_json(q, context)
-        if data == "settname":
-            return await handlers_admin.start_set_teacher(q, context)
 
         # ---------- ڕاپۆرتەکان (ئادمین) ----------
         if data == "admrp":
@@ -217,6 +221,8 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return await handlers_admin.cb_user_view(q, context, data[9:])
         if data == "usr:search":
             return await handlers_admin.start_user_search(q, context)
+        if data.startswith("usrmsg:"):
+            return await handlers_admin.start_user_msg(q, context, data[7:])
 
         # ---------- تاقیکردنەوەی شەوانە (ئادمین) ----------
         if data == "qnev":
@@ -229,6 +235,16 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return await handlers_admin.qn_edit_time(q, context)
         if data == "qn:editsrc":
             return await handlers_admin.qn_edit_src(q, context)
+        if data == "qn:srcfolder":
+            return await handlers_admin.qn_edit_src_folder(q, context)
+        if data == "qn:srcbank":
+            return await handlers_admin.cb_qn_bank(q, context)
+        if data == "qn:bankadd":
+            return await handlers_admin.cb_qn_bank_add(q, context)
+        if data == "qn:bankdel":
+            return await handlers_admin.cb_qn_bank_del(q, context)
+        if data == "qn:bankdone":
+            return await handlers_admin.cb_qnev(q, context)
         if data == "qn:del":
             return await handlers_admin.cb_qn_delete(q, context)
         if data == "qn:delok":
@@ -239,6 +255,18 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return await handlers_admin.cb_qn_cancel_wiz(q, context)
         if data == "qn:countall":
             return await handlers_admin.cb_qn_count(q, context, True)
+        if data.startswith("qn:countn:"):
+            try:
+                n = int(data[10:])
+            except ValueError:
+                return
+            return await handlers_admin.cb_qn_count_num(q, context, n)
+        if data.startswith("ebcorr:"):
+            try:
+                idx = int(data[7:])
+            except ValueError:
+                return
+            return await handlers_admin.eb_correct(q, context, idx)
         if data.startswith("qnf:"):
             return await handlers_admin.cb_qn_folder(q, context, data)
 
@@ -330,12 +358,15 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 # ---------------- مسڕەری پەیامەکان ----------------
 
 # فڵۆوەکانی ئادمین — تەنها بۆ ئادمینەکان
-ADMIN_FLOWS = {"addq", "newfolder", "rename", "newpage", "additem", "addadmin",
-               "setnum", "editqtext", "editqimg", "tname", "tkreply", "impjson",
-               "rpreply", "usrsearch", "qnev", "qntime", "qnsrc", "bcast"}
+ADMIN_FLOWS = {"addq", "qnbank", "newfolder", "rename", "newpage", "additem",
+               "addadmin", "setnum", "editqtext", "editqimg", "tkreply", "impjson",
+               "rpreply", "usrsearch", "qnev", "qntime", "qnsrc", "usrmsg", "bcast"}
+
+# فڵۆوەکان کە لە route_wizard_extra دا مامەڵەیان لەگەڵ دەکرێت
+ADMIN_EXTRA_FLOWS = {"rpreply", "usrsearch", "qnev", "qntime", "qnsrc", "usrmsg", "bcast"}
 
 # فڵۆوەکانی بەکارهێنەری ئاسایی
-USER_FLOWS = {"reg", "ask", "quiznum", "report", "fcadd"}
+USER_FLOWS = {"reg", "ask", "quiznum", "report", "fcadd", "mq"}
 
 
 async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -350,9 +381,11 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             # فلۆوی بەکارهێنەر
             if flow in USER_FLOWS:
                 return await handlers_user.route_wizard(update, context, w)
-            # فلۆوی ئادمین
+            # فلۆوی ئادمین — کلاسیک یان زیادکراو
             if flow in ADMIN_FLOWS and storage.is_admin(msg.from_user.id):
-                return await handlers_admin.route_wizard_extra(update, context, w)
+                if flow in ADMIN_EXTRA_FLOWS:
+                    return await handlers_admin.route_wizard_extra(update, context, w)
+                return await handlers_admin.route_wizard(update, context, w)
 
         if msg.text:
             return await msg.reply_text(T.HINT_START, reply_markup=K.home_only())
@@ -387,7 +420,9 @@ def main():
     defaults = Defaults(protect_content=True)
 
     # خێرایی: pool ی گەورەتر بۆ وەڵامدانەوەی چەندین بەکارهێنەر لە یەک چرکەدا
-    request = HTTPXRequest(connection_pool_size=64, pool_timeout=10.0)
+    request = HTTPXRequest(connection_pool_size=64, pool_timeout=10.0,
+                           connect_timeout=15.0, read_timeout=20.0,
+                           write_timeout=20.0, media_write_timeout=120.0)
 
     app = (Application.builder()
            .token(config.BOT_TOKEN)

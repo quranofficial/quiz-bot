@@ -368,7 +368,6 @@ def settings_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [btn(T.SET_ALL_VALUE, "setall")],
         [btn(T.A_BTN_SET_NUM, "setnum")],
-        [btn(T.A_BTN_SET_TEACHER, "settname")],
         [btn(T.A_BTN_BACK_PANEL, "adm")],
     ])
 
@@ -430,8 +429,9 @@ def users_list_kb(users, page: int, total: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(rows)
 
 
-def user_view_kb() -> InlineKeyboardMarkup:
+def user_view_kb(uid) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
+        [btn(T.A_BTN_USR_MSG, "usrmsg:{}".format(uid))],
         [btn(T.A_USR_BACK_LIST, "usr")],
         [btn(T.A_BTN_BACK_PANEL, "adm")],
     ])
@@ -478,7 +478,42 @@ def qn_folder_kb(children, depth: int, fid=None) -> InlineKeyboardMarkup:
 def qn_count_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [btn(T.A_QN_BTN_ALL, "qn:countall")],
+        [btn(T.A_QN_BTN_TEN, "qn:countn:10"), btn(T.A_QN_BTN_TWENTY, "qn:countn:20")],
         [btn(T.WIZ_BTN_STOP, "qn:cancelwiz")],
+    ])
+
+
+def qn_src_kb() -> InlineKeyboardMarkup:
+    """سەرچاوەی پرسیارەکانی تاقیکردنەوەی شەوانە: لە بەشەکان یان نووسینی نوێ."""
+    return InlineKeyboardMarkup([
+        [btn(T.A_QN_BTN_SRC_FOLDER, "qn:srcfolder")],
+        [btn(T.A_QN_BTN_SRC_BANK, "qn:srcbank")],
+        [btn(T.A_BTN_BACK_PANEL, "qnev")],
+    ])
+
+
+def qn_bank_kb(n: int) -> InlineKeyboardMarkup:
+    rows = [[btn(T.A_QN_BTN_BANK_ADD, "qn:bankadd")]]
+    if n:
+        rows.append([btn(T.A_QN_BTN_BANK_DEL, "qn:bankdel")])
+    rows.append([btn(T.A_QN_BTN_BANK_DONE, "qn:bankdone")])
+    return InlineKeyboardMarkup(rows)
+
+
+def eb_correct_kb(options) -> InlineKeyboardMarkup:
+    """هەڵبژاردنی وەڵامی ڕاست بۆ پرسیاری بەنکۆی شەوانە."""
+    rows = []
+    for i, o in enumerate(options):
+        rows.append([btn("{}) {}".format(st.LETTERS[i], st.trunc(o.get("text", ""), 50)),
+                         "ebcorr:{}".format(i))])
+    rows.append([btn(T.WIZ_BTN_STOP, "wx:cancel")])
+    return InlineKeyboardMarkup(rows)
+
+
+def after_bank_saved_kb() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [btn(T.A_QN_BTN_BANK_ADD, "qn:bankadd")],
+        [btn(T.A_QN_BTN_BANK_DONE, "qn:bankdone")],
     ])
 
 

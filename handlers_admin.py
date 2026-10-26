@@ -8,7 +8,7 @@ import logging
 import os
 import time
 
-from telegram import Update
+from telegram import BotCommand, BotCommandScopeChat, Update
 from telegram.error import BadRequest
 from telegram.ext import ContextTypes
 
@@ -38,6 +38,10 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     if update.effective_chat:
         storage.clear_wizard(update.effective_chat.id)
+    # دوگمەکانی فەرمان بۆ ئادمین: /admin + /start + /help (یەک جار بۆ هەر چاتێک)
+    if not context.bot_data.get("cmds_set_{}".format(user.id)):
+        await ensure_admin_commands(context.bot, user.id)
+        context.bot_data["cmds_set_{}".format(user.id)] = True
     await msg.reply_text(
         T.ADMIN_HOME.format(users=st.knum(storage.count_users()),
                             tickets=st.knum(storage.count_open_tickets()),
@@ -45,6 +49,18 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=K.admin_main(storage.count_open_tickets(),
                                   storage.count_open_reports(),
                                   storage.count_users()))
+
+
+async def ensure_admin_commands(bot, chat_id):
+    """دوگمەکانی فەرمان بۆ چاتی ئادمین — /admin + /start + /help."""
+    try:
+        await bot.set_my_commands(
+            [BotCommand("admin", "پانێڵی ئادمین"),
+             BotCommand("start", "دەستپێکردن"),
+             BotCommand("help", "ڕێنمایی")],
+            scope=BotCommandScopeChat(chat_id))
+    except Exception:
+        pass
 
 
 async def cmd_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -238,8 +254,7 @@ async def cb_settings(query, context):
     storage = _storage(context)
     qpq = storage.db()["settings"].get("questions_per_quiz", 0) or 0
     val = T.SET_ALL_VALUE if qpq <= 0 else st.knum(qpq)
-    text = (T.A_SETTINGS.format(v=val)
-            + "\n• ناوی مامۆستا: {}".format(storage.get_teacher_name()))
+    text = T.A_SETTINGS.format(v=val)
     await handlers_user.edit_message(query, text, K.settings_kb())
 
 
@@ -477,9 +492,69 @@ async def route_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE, w: di
                                        K.wiz_options_kb(len(data["options"])))
             else:
                 await msg.reply_text(T.WIZ_NEED_TEXT)
+        else:
+            await msg.reply_text(T.WIZ_USE_BUTTONS)
         return
 
-    if flow == "newfolder" and msg.text and msg.text.strip():
+    if flow == "qnbank":
+        # ویزاردی پرسیاری نوێ بۆ بەنکۆی تاقیکردنەوەی شەوانە — وەک addq بەڵام دەچێتە ev["bank"]
+        if step == "image":
+            if msg.photo:
+                data["image"] = msg.photo[-1].file_id
+                cap = (msg.caption or "").strip()
+                if cap:
+                    data["text"] = cap[:3500]
+                    _set_step(storage, chat, w, "options")
+                    await _edit_prompt(context, chat, w,
+                                       T.WIZ_Q_OPTIONS.format(opts=T.WIZ_Q_OPTIONS_EMPTY),
+                                       K.wiz_options_kb(0))
+                else:
+                    _set_step(storage, chat, w, "text")
+                    await _edit_prompt(context, chat, w, T.WIZ_Q_TEXT, None)
+            else:
+                await msg.reply_text(T.WIZ_NEED_PHOTO)
+        elif step == "text":
+            if msg.text and msg.text.strip():
+                data["text"] = msg.text.strip()[:3500]
+                _set_step(storage, chat, w, "highlight")
+                await _edit_prompt(context, chat, w, T.WIZ_Q_HIGHLIGHT,
+                                   K.wiz_highlight_kb())
+            else:
+                await msg.reply_text(T.WIZ_NEED_TEXT)
+        elif step == "highlight":
+            if msg.text and msg.text.strip():
+                new_text, found = _apply_highlight(data.get("text") or "", msg.text.strip()[:60])
+                if not found:
+                    await msg.reply_text(T.WIZ_HL_NOT_FOUND)
+                    return
+                data["text"] = new_text
+                _set_step(storage, chat, w, "options")
+                await _edit_prompt(context, chat, w,
+                                   T.WIZ_Q_OPTIONS.format(opts=T.WIZ_Q_OPTIONS_EMPTY),
+                                   K.wiz_options_kb(0))
+            else:
+                await msg.reply_text(T.WIZ_NEED_TEXT)
+        elif step == "options":
+            if msg.text and msg.text.strip():
+                data["options"].append({"text": msg.text.strip()[:200], "correct": False})
+                if len(data["options"]) >= 6:
+                    _set_step(storage, chat, w, "correct")
+                    await _edit_prompt(context, chat, w, T.WIZ_Q_CORRECT,
+                                       K.eb_correct_kb(data["options"]))
+                else:
+                    storage.set_wizard(chat, w)
+                    await _edit_prompt(context, chat, w,
+                                       T.WIZ_Q_OPTIONS.format(opts=_opts_list(data["options"])),
+                                       K.wiz_options_kb(len(data["options"])))
+            else:
+                await msg.reply_text(T.WIZ_NEED_TEXT)
+        else:
+            await msg.reply_text(T.WIZ_USE_BUTTONS)
+        return
+
+    if flow == "newfolder":
+        if not (msg.text and msg.text.strip()):
+            return await msg.reply_text(T.WIZ_NEED_TEXT)
         title = st.trunc(msg.text, 60)
         parent = data.get("parent") or "root"
         storage.add_folder(parent, title)
@@ -488,7 +563,9 @@ async def route_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE, w: di
                              reply_markup=K.after_folder_saved_kb(parent))
         return
 
-    if flow == "rename" and msg.text and msg.text.strip():
+    if flow == "rename":
+        if not (msg.text and msg.text.strip()):
+            return await msg.reply_text(T.WIZ_NEED_TEXT)
         title = st.trunc(msg.text, 60)
         fid = data.get("fid")
         storage.rename_folder(fid, title)
@@ -497,7 +574,9 @@ async def route_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE, w: di
                              reply_markup=K.back_to_folder_kb(fid))
         return
 
-    if flow == "newpage" and msg.text and msg.text.strip():
+    if flow == "newpage":
+        if not (msg.text and msg.text.strip()):
+            return await msg.reply_text(T.WIZ_NEED_TEXT)
         title = st.trunc(msg.text, 60)
         page = storage.add_page(title)
         storage.clear_wizard(chat)
@@ -521,17 +600,23 @@ async def route_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE, w: di
         await msg.reply_text(T.WIZ_ADDED_ITEM, reply_markup=K.after_item_saved_kb(pid))
         return
 
-    if flow == "addadmin" and msg.text:
+    if flow == "addadmin":
+        if not msg.text:
+            return await msg.reply_text(T.WIZ_INVALID_NUM)
         uid = st.to_int(msg.text)
         if uid is None or uid <= 0:
             return await msg.reply_text(T.WIZ_INVALID_NUM)
         added = storage.add_admin(uid)
         storage.clear_wizard(chat)
+        if added:
+            await ensure_admin_commands(context.bot, uid)
         text = T.WIZ_ADMIN_ADDED.format(uid=uid) if added else T.WIZ_ADMIN_EXISTS
         await msg.reply_text(text, reply_markup=K.back_to_panel_kb())
         return
 
-    if flow == "setnum" and msg.text:
+    if flow == "setnum":
+        if not msg.text:
+            return await msg.reply_text(T.WIZ_INVALID_NUM)
         n = st.to_int(msg.text)
         if n is None or n < 1 or n > 100:
             return await msg.reply_text(T.WIZ_INVALID_NUM)
@@ -541,7 +626,9 @@ async def route_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE, w: di
                              reply_markup=K.back_to_panel_kb())
         return
 
-    if flow == "editqtext" and msg.text and msg.text.strip():
+    if flow == "editqtext":
+        if not (msg.text and msg.text.strip()):
+            return await msg.reply_text(T.WIZ_NEED_TEXT)
         storage.set_question_text(data.get("qid"), msg.text.strip()[:3500])
         storage.clear_wizard(chat)
         await msg.reply_text(T.WIZ_TEXT_SAVED,
@@ -558,18 +645,14 @@ async def route_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE, w: di
             await msg.reply_text(T.WIZ_NEED_PHOTO)
         return
 
-    if flow == "tname" and msg.text and msg.text.strip():
-        storage.set_teacher_name(st.trunc(msg.text.strip(), 60))
-        storage.clear_wizard(chat)
-        await msg.reply_text(T.WIZ_SAVED_TEACHER.format(t=storage.get_teacher_name()),
-                             reply_markup=K.back_to_panel_kb())
-        return
-
     if flow == "tkreply":
         return await _finish_ticket_reply(update, context, w, data)
 
     if flow == "impjson":
         return await _route_import(update, context, w, data, msg)
+
+    # هیچ لقێک وەڵامی نەدەوە — بێدەنگ مەبە (چارەسەری بڕوان)
+    await msg.reply_text(T.WIZ_NEED_TEXT)
 
 
 # ---------------- ویزارد: دوگمەکان ----------------
@@ -589,7 +672,7 @@ async def _wiz_gone(query):
 
 async def wx_skipimg(query, context):
     storage, chat, w = _wiz_of(query, context)
-    if not w or w.get("flow") != "addq" or w.get("step") != "image":
+    if not w or w.get("flow") not in ("addq", "qnbank") or w.get("step") != "image":
         return await _wiz_gone(query)
     _set_step(storage, chat, w, "text")
     await _edit_prompt(context, chat, w, T.WIZ_Q_TEXT, None)
@@ -598,7 +681,7 @@ async def wx_skipimg(query, context):
 async def wx_nohl(query, context):
     """پشتگوێخستنی هەنگاوی وشەی سوور — ڕاستەوخۆ بۆ هەڵبژاردەکان."""
     storage, chat, w = _wiz_of(query, context)
-    if not w or w.get("flow") != "addq" or w.get("step") != "highlight":
+    if not w or w.get("flow") not in ("addq", "qnbank") or w.get("step") != "highlight":
         return await _wiz_gone(query)
     _set_step(storage, chat, w, "options")
     await _edit_prompt(context, chat, w,
@@ -608,7 +691,7 @@ async def wx_nohl(query, context):
 
 async def wx_done(query, context):
     storage, chat, w = _wiz_of(query, context)
-    if not w or w.get("flow") != "addq" or w.get("step") != "options":
+    if not w or w.get("flow") not in ("addq", "qnbank") or w.get("step") != "options":
         return await _wiz_gone(query)
     if len(w["data"].get("options", [])) < 2:
         try:
@@ -617,7 +700,9 @@ async def wx_done(query, context):
             pass
         return
     _set_step(storage, chat, w, "correct")
-    await _edit_prompt(context, chat, w, T.WIZ_Q_CORRECT, K.wiz_correct_kb(w["data"]["options"]))
+    opts = w["data"]["options"]
+    kb = K.eb_correct_kb(opts) if w.get("flow") == "qnbank" else K.wiz_correct_kb(opts)
+    await _edit_prompt(context, chat, w, T.WIZ_Q_CORRECT, kb)
 
 
 async def wx_cancel(query, context):
@@ -649,6 +734,26 @@ async def wx_correct(query, context, idx: int):
     await query.message.reply_text(
         T.WIZ_Q_SAVED.format(folder=(folder or {}).get("title", "-")),
         reply_markup=K.after_question_saved_kb(fid))
+
+
+async def eb_correct(query, context, idx: int):
+    """هەڵبژاردنی وەڵامی ڕاست بۆ پرسیاری بەنکۆی شەوانە — پاشەکەوت لە ev["bank"]."""
+    storage, chat, w = _wiz_of(query, context)
+    if not w or w.get("flow") != "qnbank" or w.get("step") != "correct":
+        return await _wiz_gone(query)
+    options = w["data"].get("options", [])
+    if idx < 0 or idx >= len(options):
+        return await _wiz_gone(query)
+    options[idx]["correct"] = True
+    q = {"id": st.new_id("eb"), "type": "question",
+         "text": w["data"].get("text") or "",
+         "image": w["data"].get("image"),
+         "options": options}
+    n = storage.add_event_bank_question(q)
+    storage.clear_wizard(chat)
+    await query.message.reply_text(
+        T.A_QN_BANK_SAVED.format(n=st.knum(n)),
+        reply_markup=K.after_bank_saved_kb())
 
 
 # ---------------- پرسیارەکانی بەکارهێنەران (پرسیار بکە) ----------------
@@ -1039,13 +1144,6 @@ async def start_import_json(query, context):
     await handlers_user.edit_message(query, text, K.wiz_cancel_kb())
 
 
-async def start_set_teacher(query, context):
-    storage = _storage(context)
-    chat = query.message.chat_id
-    storage.set_wizard(chat, {"flow": "tname", "step": "name", "data": {}})
-    await handlers_user.edit_message(query, T.WIZ_SET_TEACHER, K.wiz_cancel_kb())
-
-
 MAX_IMPORT_BYTES = 2 * 1024 * 1024
 
 
@@ -1269,11 +1367,14 @@ async def cb_users(query, context, page: int = 1):
     if not users:
         return await handlers_user.alert(query, T.A_USR_EMPTY, K.back_to_panel_kb())
     total = len(users)
+    students, others = storage.count_teacher_users()
     pages_n = max(1, (total + K.USERS_PER_PAGE - 1) // K.USERS_PER_PAGE)
     page = max(1, min(page, pages_n))
     chunk = users[(page - 1) * K.USERS_PER_PAGE: page * K.USERS_PER_PAGE]
     await handlers_user.edit_message(
-        query, T.A_USR_TITLE.format(n=st.knum(total), p=st.knum(page), pp=st.knum(pages_n)),
+        query, T.A_USR_TITLE.format(n=st.knum(total), t=st.knum(students),
+                                    nt=st.knum(others),
+                                    p=st.knum(page), pp=st.knum(pages_n)),
         K.users_list_kb(chunk, page, total))
 
 
@@ -1327,7 +1428,54 @@ async def cb_user_view(query, context, uid_raw: str):
         quizzes=st.knum(stats.get("quizzes", 0)),
         total=st.knum(total), correct=st.knum(correct), pct=st.knum(pct),
         byfolder=byfolder, qn=qn_txt)
-    await handlers_user.edit_message(query, text, K.user_view_kb())
+    await handlers_user.edit_message(query, text, K.user_view_kb(uid))
+
+
+async def start_user_msg(query, context, uid_raw: str):
+    """نامەی تایبەت بۆ یەک بەکارهێنەر لە بەشی بەکارهێنەرانەوە."""
+    storage = _storage(context)
+    uid = st.to_int(uid_raw)
+    u = storage.get_user(uid) if uid is not None else None
+    if not u:
+        return await handlers_user.alert(query, T.A_USR_NOT_FOUND)
+    chat = query.message.chat_id
+    storage.set_wizard(chat, {"flow": "usrmsg", "step": "msg",
+                              "data": {"uid": uid, "name": u.get("name") or ""}})
+    text = T.WIZ_USR_MSG.format(name=st.trunc(u.get("name") or "", 30))
+    await handlers_user.edit_message(query, text, K.wiz_cancel_kb())
+
+
+async def _finish_user_msg(update, context, w: dict):
+    storage = _storage(context)
+    msg = update.message
+    chat = msg.chat_id
+    d = w.get("data") or {}
+    uid = d.get("uid")
+    u = storage.get_user(uid)
+    if not u:
+        storage.clear_wizard(chat)
+        return await msg.reply_text(T.A_USR_NOT_FOUND)
+
+    text = (msg.text or msg.caption or "").strip()
+    photo = msg.photo[-1].file_id if msg.photo else None
+    if not text and not photo:
+        return await msg.reply_text(T.WIZ_NEED_ITEM)
+
+    head = T.USR_MSG_HEAD.format(reply=fmt.apply(text) if text else "")
+    try:
+        if photo:
+            await fmt.send_photo_html(context.bot, uid, photo, head or "📩")
+        else:
+            await fmt.send_html(context.bot, uid, head)
+    except Exception as e:
+        log.warning("ناردنی نامەی تایبەت بۆ %s: %s", uid, e)
+        storage.clear_wizard(chat)
+        return await msg.reply_text(T.USR_MSG_GONE)
+
+    storage.clear_wizard(chat)
+    await msg.reply_text(
+        T.USR_MSG_SENT.format(name=u.get("name") or "—"),
+        reply_markup=K.back_to_panel_kb())
 
 
 async def start_user_search(query, context):
@@ -1341,6 +1489,9 @@ async def _finish_user_search(update, context, w: dict):
     storage = _storage(context)
     msg = update.message
     chat = msg.chat_id
+    if not msg.text or not msg.text.strip():
+        await msg.reply_text(T.WIZ_NEED_TEXT)
+        return
     results = storage.find_users(msg.text or "")
     storage.clear_wizard(chat)
     if not results:
@@ -1365,8 +1516,15 @@ def _event_state_text(storage, ev: dict) -> str:
                  "over": T.A_QN_STATE_OVER}
     state = state_map.get(evmod.status(ev), "—")
     src = ev.get("src") or {}
-    folder = st.find_node(storage.db()["tree"], src.get("folder_id"))
-    src_title = (folder or {}).get("title") or "—"
+    if (src.get("type") or "folder") == "bank":
+        src_title = T.A_QN_SRC_BANK_NAME
+        n = len(ev.get("bank") or [])
+    else:
+        folder = st.find_node(storage.db()["tree"], src.get("folder_id"))
+        src_title = (folder or {}).get("title") or "—"
+        n = st.count_questions(folder) if folder else 0
+        if src.get("count"):
+            n = src["count"]
     date = evmod.today_str()
     n_played = len((ev.get("results") or {}).get(date) or {})
     return T.A_QN_VIEW.format(
@@ -1374,7 +1532,7 @@ def _event_state_text(storage, ev: dict) -> str:
         start=evmod.clock_k(ev.get("start", "—")),
         end=evmod.clock_k(ev.get("end", "—")),
         src=src_title,
-        n=st.knum(src.get("count") or st.count_questions(folder) if folder else 0),
+        n=st.knum(n),
         shown=(T.A_QN_SHOWN_YES if ev.get("enabled") else T.A_QN_SHOWN_NO),
         state=state, p=st.knum(n_played))
 
@@ -1451,6 +1609,14 @@ async def qn_edit_time(query, context):
 
 
 async def qn_edit_src(query, context):
+    """سەرچاوەی پرسیارەکان: لە بەشەکان وەربگرە یان پرسیاری نوێ بنووسە."""
+    storage = _storage(context)
+    if not storage.get_event():
+        return await handlers_user.alert(query, T.A_QN_BANK_NEED_EVENT, K.back_to_panel_kb())
+    await handlers_user.edit_message(query, T.A_QN_SRC_ASK, K.qn_src_kb())
+
+
+async def qn_edit_src_folder(query, context):
     storage = _storage(context)
     chat = query.message.chat_id
     tree = storage.db()["tree"]
@@ -1460,6 +1626,43 @@ async def qn_edit_src(query, context):
                               "data": {"path": []}})
     kb = K.qn_folder_kb([n for n in tree if n.get("type") == "folder"], 0)
     await handlers_user.edit_message(query, T.WIZ_QN_PICK, kb)
+
+
+# --- بەنکۆی پرسیارە نوێکانی تاقیکردنەوەی شەوانە ---
+
+async def cb_qn_bank(query, context):
+    """شاشەی بەڕێوەبردنی بەنکۆی پرسیارەکان — هەروەها بەنکۆ وەک سەرچاوە دان دەنێت."""
+    storage = _storage(context)
+    ev = storage.get_event()
+    if not ev:
+        return await handlers_user.alert(query, T.A_QN_BANK_NEED_EVENT, K.back_to_panel_kb())
+    # هەڵبژاردنی «پرسیاری نوێ» → سەرچاوەکە دەبێتە بەنکۆ
+    if (ev.get("src") or {}).get("type") != "bank":
+        ev["src"] = {"type": "bank"}
+        storage.save_event(ev)
+    n = len(ev.get("bank") or [])
+    await handlers_user.edit_message(query, T.A_QN_BANK_TITLE.format(n=st.knum(n)),
+                                     K.qn_bank_kb(n))
+
+
+async def cb_qn_bank_add(query, context):
+    storage = _storage(context)
+    if not storage.get_event():
+        return await handlers_user.alert(query, T.A_QN_BANK_NEED_EVENT, K.back_to_panel_kb())
+    chat = query.message.chat_id
+    w = {"flow": "qnbank", "step": "image",
+         "data": {"image": None, "text": "", "options": []}}
+    storage.set_wizard(chat, w)
+    await _edit_prompt(context, chat, w, T.WIZ_Q_IMAGE, K.wiz_image_kb())
+
+
+async def cb_qn_bank_del(query, context):
+    storage = _storage(context)
+    n = storage.pop_event_bank_question()
+    if not n:
+        return await handlers_user.alert(query, T.A_QN_BANK_EMPTY)
+    await handlers_user.alert(query, T.A_QN_BANK_DEL_DONE.format(n=st.knum(n)))
+    await cb_qn_bank(query, context)
 
 
 def _ev_wizard_common(storage, ev: dict, data: dict):
@@ -1592,6 +1795,18 @@ async def cb_qn_count(query, context, all_flag: bool):
     return await _save_event_count(query, context, w, 0 if all_flag else -1)
 
 
+async def cb_qn_count_num(query, context, n: int):
+    """دوگمەی خێرا: ١٠ یان ٢٠ پرسیار."""
+    storage = _storage(context)
+    chat = query.message.chat_id
+    w = storage.get_wizard(chat)
+    if not w or w.get("flow") != "qnsrc" or w.get("step") != "count":
+        return await handlers_user.alert(query, T.WIZ_GONE, K.back_to_panel_kb())
+    if n < 1:
+        return await handlers_user.alert(query, T.WIZ_INVALID_NUM)
+    return await _save_event_count(query, context, w, n)
+
+
 async def _save_event_count(query, context, w: dict, count: int):
     """count = 0 → هەمووی؛ count = -1 → وەک خۆی لە داتاوە (بۆ ناردن بە ژمارە)."""
     storage = _storage(context)
@@ -1599,7 +1814,7 @@ async def _save_event_count(query, context, w: dict, count: int):
     d = w.get("data") or {}
     chosen = 0 if count == 0 else max(1, int(d.get("count") or 1)) if count < 0 else count
     ev = storage.get_event()
-    src = {"folder_id": d.get("folder_id"), "count": chosen}
+    src = {"type": "folder", "folder_id": d.get("folder_id"), "count": chosen}
     ev = _ev_wizard_common(storage, ev, {
         "title": d.get("title"), "start": d.get("start"),
         "end": d.get("end"), "src": src})
@@ -1699,7 +1914,7 @@ async def _route_bcast(update, context, w: dict):
 # ============================================================================
 
 async def route_wizard_extra(update: Update, context: ContextTypes.DEFAULT_TYPE, w: dict):
-    """فلۆوە نوێکانی ئادمین: rpreply / usrsearch / qnev / qntime / qnsrc / bcast"""
+    """فلۆوە نوێکانی ئادمین: rpreply / usrsearch / qnev / qntime / qnsrc / bcast / usrmsg"""
     flow = w.get("flow")
     data = w.get("data") or {}
     if flow == "rpreply":
@@ -1719,9 +1934,19 @@ async def route_wizard_extra(update: Update, context: ContextTypes.DEFAULT_TYPE,
                 if n is None or n < 1 or n > 500:
                     return await msg.reply_text(T.WIZ_INVALID_NUM)
                 return await _save_event_src(update, context, w, count=n)
-        return  # باشتر بە دوگمە
+            return await update.message.reply_text(T.WIZ_INVALID_NUM) if update.message else None
+        # لە هەنگاوی folder — بە دوگمە
+        if update.message:
+            return await update.message.reply_text(T.WIZ_USE_BUTTONS)
+        return
+    if flow == "usrmsg":
+        return await _finish_user_msg(update, context, w)
     if flow == "bcast":
         return await _route_bcast(update, context, w)
+    # هیچ لقێک وەڵامی نەدەوە — بێدەنگ مەبە (چارەسەری بڕوان)
+    msg = update.message
+    if msg:
+        await msg.reply_text(T.WIZ_NEED_TEXT)
 
 
 async def _save_event_src(update, context, w: dict, count: int):
@@ -1730,7 +1955,7 @@ async def _save_event_src(update, context, w: dict, count: int):
     chat = msg.chat_id
     d = w.get("data") or {}
     ev = storage.get_event()
-    src = {"folder_id": d.get("folder_id"), "count": int(count)}
+    src = {"type": "folder", "folder_id": d.get("folder_id"), "count": int(count)}
     ev = _ev_wizard_common(storage, ev, {
         "title": d.get("title"), "start": d.get("start"),
         "end": d.get("end"), "src": src})
