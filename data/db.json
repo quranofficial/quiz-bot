@@ -71,10 +71,13 @@
    "uid": 8634363348
   },
   "1373569356": {
-   "name": "Ismahil",
-   "teacher": null,
+   "name": "har kasek",
+   "teacher": true,
    "username": "@ismahil_312",
    "joined": 1793040691,
+   "stats": {},
+   "flashcards": [],
+   "last_quiz": null,
    "uid": 1373569356
   }
  },
@@ -82,14 +85,8 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "reg",
-   "step": "name",
-   "data": {}
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793040691
+  "updated_at": 1793040706
  }
 }
