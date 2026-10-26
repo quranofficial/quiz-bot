@@ -57,8 +57,17 @@
   }
  ],
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "1373569356": {
+   "flow": "rename",
+   "step": "title",
+   "data": {
+    "fid": "f_sample_sec",
+    "prompt": 8
+   }
+  }
+ },
  "meta": {
-  "updated_at": 1793027223
+  "updated_at": 1793027243
  }
 }
