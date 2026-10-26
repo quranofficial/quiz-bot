@@ -47,7 +47,32 @@
      "id": "f6f30b63d",
      "type": "folder",
      "title": "کەرتی دووەم",
-     "children": []
+     "children": [
+      {
+       "id": "q090342db",
+       "type": "question",
+       "text": "Test",
+       "image": null,
+       "options": [
+        {
+         "text": "A. 1",
+         "correct": false
+        },
+        {
+         "text": "B.2",
+         "correct": false
+        },
+        {
+         "text": "C.5",
+         "correct": false
+        },
+        {
+         "text": "D. All Correct",
+         "correct": true
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -157,37 +182,8 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "addq",
-   "step": "correct",
-   "data": {
-    "folder_id": "f6f30b63d",
-    "image": null,
-    "text": "Test",
-    "options": [
-     {
-      "text": "A. 1",
-      "correct": false
-     },
-     {
-      "text": "B.2",
-      "correct": false
-     },
-     {
-      "text": "C.5",
-      "correct": false
-     },
-     {
-      "text": "D. All Correct",
-      "correct": false
-     }
-    ],
-    "prompt": 364
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793046863
+  "updated_at": 1793046866
  }
 }
