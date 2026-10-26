@@ -1,12 +1,36 @@
 {
- "settings": {
-  "questions_per_quiz": 0,
-  "teacher_name": "ئارام عبدالرزاق",
-  "ticket_seq": 0,
-  "report_seq": 0
- },
+ "settings": {"questions_per_quiz": 0,
+               "teacher_name": "ئارام عبدالرزاق",
+               "ticket_seq": 0},
  "admins": [],
- "tree": [],
+ "tree": [
+  {
+   "id": "f_sample_sec",
+   "type": "folder",
+   "title": "بەشی نموونە",
+   "children": [
+    {
+     "id": "f_sample_part",
+     "type": "folder",
+     "title": "کەرتی نموونە",
+     "children": [
+      {
+       "id": "q_sample_one",
+       "type": "question",
+       "text": "کوردستان دەوڵەتە؟",
+       "image": null,
+       "options": [
+        {"text": "نەخێر", "correct": false},
+        {"text": "بەڵێ", "correct": true},
+        {"text": "نازانم", "correct": false},
+        {"text": "A+B ڕاستە", "correct": false}
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ],
  "pages": [
   {
    "id": "p_sample_notes",
@@ -20,41 +44,9 @@
    ]
   }
  ],
- "users": {
-  "1373569356": {
-   "name": "Ismahil",
-   "teacher": false,
-   "username": "@ismahil_312",
-   "joined": 1793034679,
-   "stats": {},
-   "flashcards": [],
-   "last_quiz": null,
-   "uid": 1373569356
-  },
-  "8634363348": {
-   "name": "Ismahil",
-   "teacher": true,
-   "username": "@Rio_K101",
-   "joined": 1793034698,
-   "stats": {},
-   "flashcards": [
-    {
-     "id": "cd494c247",
-     "front": "چەند ئێسکمان هەیە؟",
-     "back": "٢٠٦",
-     "photo": null
-    }
-   ],
-   "last_quiz": null,
-   "uid": 8634363348
-  }
- },
+ "users": {},
  "tickets": {},
- "reports": {},
- "events": {},
  "sessions": {},
  "wizard": {},
- "meta": {
-  "updated_at": 1793038614
- }
+ "meta": {"updated_at": 0}
 }
