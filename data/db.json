@@ -123,7 +123,23 @@
  "tickets": {},
  "reports": {},
  "events": {},
- "sessions": {},
+ "sessions": {
+  "1373569356": {
+   "uid": 1373569356,
+   "folder_id": "f06de57a4",
+   "folder_title": "کەرتی یەکەم",
+   "qids": [
+    "q0f93726b"
+   ],
+   "idx": 0,
+   "answers": [],
+   "ts": 1793046518.1746213,
+   "src": "section",
+   "event_id": null,
+   "date": null,
+   "extra": {}
+  }
+ },
  "wizard": {
   "8634363348": {
    "flow": "reg",
@@ -132,6 +148,6 @@
   }
  },
  "meta": {
-  "updated_at": 1793046416
+  "updated_at": 1793046518
  }
 }
