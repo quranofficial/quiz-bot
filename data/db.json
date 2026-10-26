@@ -6,46 +6,7 @@
   "report_seq": 0
  },
  "admins": [],
- "tree": [
-  {
-   "id": "f_sample_sec",
-   "type": "folder",
-   "title": "بەشی نموونە",
-   "children": [
-    {
-     "id": "f_sample_part",
-     "type": "folder",
-     "title": "کەرتی نموونە",
-     "children": [
-      {
-       "id": "q_sample_one",
-       "type": "question",
-       "text": "کوردستان دەوڵەتە؟",
-       "image": null,
-       "options": [
-        {
-         "text": "نەخێر",
-         "correct": false
-        },
-        {
-         "text": "بەڵێ",
-         "correct": true
-        },
-        {
-         "text": "نازانم",
-         "correct": false
-        },
-        {
-         "text": "A+B ڕاستە",
-         "correct": false
-        }
-       ]
-      }
-     ]
-    }
-   ]
-  }
- ],
+ "tree": [],
  "pages": [
   {
    "id": "p_sample_notes",
@@ -94,6 +55,6 @@
  "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793038007
+  "updated_at": 1793038017
  }
 }
