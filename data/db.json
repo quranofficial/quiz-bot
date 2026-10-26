@@ -55,12 +55,15 @@
  "sessions": {},
  "wizard": {
   "1373569356": {
-   "flow": "impjson",
-   "step": "file",
-   "data": {}
+   "flow": "newfolder",
+   "step": "title",
+   "data": {
+    "parent": "root",
+    "prompt": 94
+   }
   }
  },
  "meta": {
-  "updated_at": 1793038054
+  "updated_at": 1793038058
  }
 }
