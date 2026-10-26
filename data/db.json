@@ -151,7 +151,7 @@
    "qid": "q0f93726b",
    "qtext": "ژمارەی ئێسکەکان: جەستەی مرۆڤێکی پێگەیشتوو لە ___ ئێسکی جیاواز پێکدێت.",
    "comment": "ژژسهس",
-   "status": "open",
+   "status": "closed",
    "created": 1793041308,
    "replies": [],
    "admin_msgs": {
@@ -166,6 +166,6 @@
  "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793041308
+  "updated_at": 1793041332
  }
 }
