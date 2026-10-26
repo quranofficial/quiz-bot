@@ -139,8 +139,17 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "1373569356": {
+   "flow": "mq",
+   "step": "sel",
+   "data": {
+    "sel": [],
+    "path": []
+   }
+  }
+ },
  "meta": {
-  "updated_at": 1793040979
+  "updated_at": 1793040994
  }
 }
