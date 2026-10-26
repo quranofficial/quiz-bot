@@ -168,8 +168,17 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "1373569356": {
+   "flow": "editqimg",
+   "step": "image",
+   "data": {
+    "qid": "q0f93726b",
+    "prompt": 277
+   }
+  }
+ },
  "meta": {
-  "updated_at": 1793043385
+  "updated_at": 1793043515
  }
 }
