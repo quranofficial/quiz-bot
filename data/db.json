@@ -53,16 +53,8 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "setnum",
-   "step": "num",
-   "data": {
-    "prompt": 105
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793038290
+  "updated_at": 1793038309
  }
 }
