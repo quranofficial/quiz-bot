@@ -102,37 +102,6 @@
   }
  ],
  "users": {
-  "8634363348": {
-   "name": "Ismahil",
-   "teacher": false,
-   "username": "@Rio_K101",
-   "joined": 1793040674,
-   "stats": {
-    "quizzes": 2,
-    "total": 2,
-    "correct": 2,
-    "last_quiz_at": 1793043674,
-    "by_folder": {
-     "کویزی گشتی": {
-      "q": 1,
-      "c": 1
-     },
-     "تاقیکردنەوەی گشتی": {
-      "q": 1,
-      "c": 1
-     }
-    }
-   },
-   "flashcards": [],
-   "last_quiz": {
-    "qids": [
-     "q0f93726b"
-    ],
-    "title": "تاقیکردنەوەی گشتی",
-    "ts": 1793043674
-   },
-   "uid": 8634363348
-  },
   "1373569356": {
    "name": "har kasek",
    "teacher": true,
@@ -178,6 +147,6 @@
  "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793046187
+  "updated_at": 1793046198
  }
 }
