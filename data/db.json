@@ -151,9 +151,17 @@
    "qid": "q0f93726b",
    "qtext": "ژمارەی ئێسکەکان: جەستەی مرۆڤێکی پێگەیشتوو لە ___ ئێسکی جیاواز پێکدێت.",
    "comment": "ژژسهس",
-   "status": "closed",
+   "status": "replied",
    "created": 1793041308,
-   "replies": [],
+   "replies": [
+    {
+     "by": 1373569356,
+     "name": "Ismahil",
+     "text": "کسکس",
+     "photo": null,
+     "at": 1793041346
+    }
+   ],
    "admin_msgs": {
     "1373569356": {
      "chat": 1373569356,
@@ -166,6 +174,6 @@
  "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793041332
+  "updated_at": 1793041346
  }
 }
