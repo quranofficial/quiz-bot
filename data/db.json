@@ -44,17 +44,8 @@
    "ts": 1793027273.8398015
   }
  },
- "wizard": {
-  "1373569356": {
-   "flow": "newfolder",
-   "step": "title",
-   "data": {
-    "parent": "root",
-    "prompt": 19
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793027336
+  "updated_at": 1793027355
  }
 }
