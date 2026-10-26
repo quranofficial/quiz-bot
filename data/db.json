@@ -73,7 +73,14 @@
    "username": "@Rio_K101",
    "joined": 1793034698,
    "stats": {},
-   "flashcards": [],
+   "flashcards": [
+    {
+     "id": "cd494c247",
+     "front": "چەند ئێسکمان هەیە؟",
+     "back": "٢٠٦",
+     "photo": null
+    }
+   ],
    "last_quiz": null,
    "uid": 8634363348
   }
@@ -90,17 +97,9 @@
     "name": "Ismahil",
     "redo": true
    }
-  },
-  "8634363348": {
-   "flow": "fcadd",
-   "step": "photo",
-   "data": {
-    "front": "چەند ئێسکمان هەیە؟",
-    "back": "٢٠٦"
-   }
   }
  },
  "meta": {
-  "updated_at": 1793034752
+  "updated_at": 1793034760
  }
 }
