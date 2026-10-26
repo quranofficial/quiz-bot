@@ -64,6 +64,8 @@ async def ensure_admin_commands(bot, chat_id):
 
 
 async def cmd_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if await handlers_user.reject_banned(update, context):
+        return
     storage = _storage(context)
     chat, msg = update.effective_chat, update.effective_message
     if not chat or not msg:
@@ -1364,6 +1366,14 @@ async def cb_user_view(query, context, uid_raw: str):
                     st.knum(entry.get("total", 0)), st.knum(entry.get("pct", 0))))
     qn_txt = "\n".join(qn_lines) if qn_lines else T.A_USR_NOQN
 
+    ban_info = storage.get_ban_info(uid)
+    if ban_info:
+        reason = (ban_info.get("reason") or "").strip()
+        status = (T.A_USR_STATUS_BANNED +
+                  (" — " + st.trunc(reason, 60) if reason else ""))
+    else:
+        status = T.A_USR_STATUS_OK
+
     text = T.A_USR_VIEW.format(
         name=u.get("name") or "—",
         username=u.get("username") or "—",
@@ -1371,12 +1381,13 @@ async def cb_user_view(query, context, uid_raw: str):
         teacher=storage.get_teacher_name(),
         is_t=("بەڵێ ✅" if u.get("teacher") else
               ("نەخێر ❌" if u.get("teacher") is not None else "—")),
+        status=status,
         joined=handlers_user.fmt_ts(u.get("joined")),
         last=handlers_user.fmt_ts(stats.get("last_quiz_at") or u.get("joined")),
         quizzes=st.knum(stats.get("quizzes", 0)),
         total=st.knum(total), correct=st.knum(correct), pct=st.knum(pct),
         byfolder=byfolder, qn=qn_txt)
-    await handlers_user.edit_message(query, text, K.user_view_kb(uid))
+    await handlers_user.edit_message(query, text, K.user_view_kb(uid, bool(ban_info)))
 
 
 async def start_user_msg(query, context, uid_raw: str):
@@ -1452,6 +1463,88 @@ async def _finish_user_search(update, context, w: dict):
     await msg.reply_text(T.A_USR_TITLE.format(
         n=st.knum(len(results)), p=st.knum(1), pp=st.knum(1)),
         reply_markup=InlineKeyboardMarkup(rows))
+
+
+# ---------------- باندکردن و سڕینەوەی هەژمار (لای ئادمین) ----------------
+
+async def start_user_ban(query, context, uid_raw: str):
+    """دەستپێکردنی فلۆوی باندکردن — داواکردنی هۆکار لە ئادمین."""
+    storage = _storage(context)
+    uid = st.to_int(uid_raw)
+    u = storage.get_user(uid) if uid is not None else None
+    if not u:
+        return await handlers_user.alert(query, T.A_USR_NOT_FOUND)
+    if storage.is_banned(uid):
+        return await handlers_user.alert(query, T.A_USR_ALREADY_BANNED)
+    chat = query.message.chat_id
+    storage.set_wizard(chat, {"flow": "usrban", "step": "reason",
+                              "data": {"uid": uid,
+                                       "name": u.get("name") or ""}})
+    text = T.WIZ_BAN_REASON.format(name=st.trunc(u.get("name") or "—", 30))
+    await handlers_user.edit_message(query, text, K.wiz_cancel_kb())
+
+
+async def _finish_user_ban(update, context, w: dict):
+    storage = _storage(context)
+    msg = update.message
+    chat = msg.chat_id
+    d = w.get("data") or {}
+    uid = d.get("uid")
+    u = storage.get_user(uid)
+    if not u:
+        storage.clear_wizard(chat)
+        return await msg.reply_text(T.A_USR_NOT_FOUND)
+    reason = (msg.text or "").strip()
+    if not reason:
+        return await msg.reply_text(T.WIZ_NEED_TEXT)
+    storage.ban_user(uid, reason, by=str(msg.from_user.id))
+    storage.clear_wizard(chat)   # فلۆوی ئادمین
+    storage.clear_wizard(uid)    # هەر ویزاردێکی چالاکى بەکارهێنەرەکە بوەستێت
+    name = st.trunc(u.get("name") or "—", 30)
+    await msg.reply_text(T.BAN_DONE.format(name=name),
+                         reply_markup=K.back_to_panel_kb())
+    # ئاگادارکردنەوەی ڕاستەوخۆی بەکارهێنەرەکە بە هۆکارەکەوە
+    try:
+        await context.bot.send_message(
+            int(uid), T.BAN_NOTICE.format(reason=(reason or "")[:300]))
+    except Exception as e:
+        log.info("نەتوانرا ئاگاداری باند بۆ %s بنێردرێت: %s", uid, e)
+
+
+async def cb_user_unban(query, context, uid_raw: str):
+    storage = _storage(context)
+    uid = st.to_int(uid_raw)
+    u = storage.get_user(uid) if uid is not None else None
+    if not u:
+        return await handlers_user.alert(query, T.A_USR_NOT_FOUND)
+    storage.unban_user(uid)
+    await handlers_user.alert(query, T.UNBAN_DONE.format(
+        name=st.trunc(u.get("name") or "—", 30)))
+    await cb_user_view(query, context, uid_raw)
+
+
+async def cb_user_del(query, context, uid_raw: str):
+    storage = _storage(context)
+    uid = st.to_int(uid_raw)
+    u = storage.get_user(uid) if uid is not None else None
+    if not u:
+        return await handlers_user.alert(query, T.A_USR_NOT_FOUND)
+    await handlers_user.edit_message(
+        query, T.CONFIRM_DEL_USER.format(name=st.trunc(u.get("name") or "—", 30)),
+        K.user_del_confirm_kb(uid))
+
+
+async def cb_user_del_ok(query, context, uid_raw: str):
+    storage = _storage(context)
+    uid = st.to_int(uid_raw)
+    u = storage.get_user(uid) if uid is not None else None
+    if not u:
+        return await handlers_user.alert(query, T.A_USR_NOT_FOUND)
+    name = st.trunc(u.get("name") or "—", 30)
+    storage.clear_wizard(uid)
+    storage.delete_user(uid)
+    await handlers_user.alert(query, T.DEL_USER_DONE.format(name=name))
+    await cb_users(query, context)
 
 
 # ============================================================================
@@ -1889,6 +1982,8 @@ async def route_wizard_extra(update: Update, context: ContextTypes.DEFAULT_TYPE,
         return
     if flow == "usrmsg":
         return await _finish_user_msg(update, context, w)
+    if flow == "usrban":
+        return await _finish_user_ban(update, context, w)
     if flow == "bcast":
         return await _route_bcast(update, context, w)
     # هیچ لقێک وەڵامی نەدەوە — بێدەنگ مەبە (چارەسەری بڕوان)

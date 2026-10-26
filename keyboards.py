@@ -415,6 +415,8 @@ def users_list_kb(users, page: int, total: int) -> InlineKeyboardMarkup:
         label = "👤 {}".format(st.trunc(u.get("name") or str(u.get("uid")), 26))
         if u.get("username"):
             label += " ({})".format(st.trunc(u["username"], 16))
+        if (u.get("ban") or {}).get("on"):
+            label = "🚫 " + label
         rows.append([btn(label, "usr:view:{}".format(u.get("uid")))])
     pages_n = max(1, (total + USERS_PER_PAGE - 1) // USERS_PER_PAGE)
     nav = []
@@ -429,11 +431,23 @@ def users_list_kb(users, page: int, total: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(rows)
 
 
-def user_view_kb(uid) -> InlineKeyboardMarkup:
+def user_view_kb(uid, banned: bool = False) -> InlineKeyboardMarkup:
+    ban_label = T.A_BTN_USR_UNBAN if banned else T.A_BTN_USR_BAN
+    ban_data = ("usr:unban:{}".format(uid) if banned
+                else "usr:ban:{}".format(uid))
     return InlineKeyboardMarkup([
         [btn(T.A_BTN_USR_MSG, "usrmsg:{}".format(uid))],
+        [btn(ban_label, ban_data)],
+        [btn(T.A_BTN_USR_DEL, "usr:del:{}".format(uid))],
         [btn(T.A_USR_BACK_LIST, "usr")],
         [btn(T.A_BTN_BACK_PANEL, "adm")],
+    ])
+
+
+def user_del_confirm_kb(uid) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [btn(T.YES_DELETE, "usr:delok:{}".format(uid)),
+         btn(T.NO_KEEP, "usr:view:{}".format(uid))],
     ])
 
 

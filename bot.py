@@ -181,6 +181,10 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         pass
 
     try:
+        # ---------- دەرگای باند: بەکارهێنەری باندکراو هیچ ناتوانێت ----------
+        if await handlers_user.reject_banned(update, context):
+            return
+
         # ---------- گشتی ----------
         if data == "noop":
             return
@@ -264,6 +268,14 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return await handlers_admin.start_user_search(q, context)
         if data.startswith("usrmsg:"):
             return await handlers_admin.start_user_msg(q, context, data[7:])
+        if data.startswith("usr:ban:"):
+            return await handlers_admin.start_user_ban(q, context, data[8:])
+        if data.startswith("usr:unban:"):
+            return await handlers_admin.cb_user_unban(q, context, data[10:])
+        if data.startswith("usr:del:"):
+            return await handlers_admin.cb_user_del(q, context, data[8:])
+        if data.startswith("usr:delok:"):
+            return await handlers_admin.cb_user_del_ok(q, context, data[10:])
 
         # ---------- تاقیکردنەوەی شەوانە (ئادمین) ----------
         if data == "qnev":
@@ -399,10 +411,12 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 # فڵۆوەکانی ئادمین — تەنها بۆ ئادمینەکان
 ADMIN_FLOWS = {"addq", "qnbank", "newfolder", "rename", "newpage", "additem",
                "addadmin", "setnum", "editqtext", "editqimg", "tkreply", "impjson",
-               "rpreply", "usrsearch", "qnev", "qntime", "qnsrc", "usrmsg", "bcast"}
+               "rpreply", "usrsearch", "qnev", "qntime", "qnsrc", "usrmsg",
+               "usrban", "bcast"}
 
 # فڵۆوەکان کە لە route_wizard_extra دا مامەڵەیان لەگەڵ دەکرێت
-ADMIN_EXTRA_FLOWS = {"rpreply", "usrsearch", "qnev", "qntime", "qnsrc", "usrmsg", "bcast"}
+ADMIN_EXTRA_FLOWS = {"rpreply", "usrsearch", "qnev", "qntime", "qnsrc", "usrmsg",
+                     "usrban", "bcast"}
 
 # فڵۆوەکانی بەکارهێنەری ئاسایی
 USER_FLOWS = {"reg", "ask", "quiznum", "report", "fcadd", "mq"}
@@ -414,6 +428,10 @@ async def on_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         return
     storage = context.bot_data["storage"]
     try:
+        # ---------- دەرگای باند: بەکارهێنەری باندکراو هیچ ناتوانێت ----------
+        if await handlers_user.reject_banned(update, context):
+            return
+
         w = storage.get_wizard(msg.chat_id)
         if w:
             flow = w.get("flow")

@@ -361,6 +361,53 @@ class Storage:
     def count_users(self) -> int:
         return len(self._db["users"])
 
+    # ---- باندکردن و سڕینەوەی هەژمار (لای ئادمین) ----
+
+    def is_banned(self, uid) -> bool:
+        """ئایا ئەم بەکارهێنەرە باندکراوە؟"""
+        u = self.get_user(uid)
+        return bool(u and (u.get("ban") or {}).get("on"))
+
+    def get_ban_info(self, uid) -> Optional[dict]:
+        """زانیاری باندەکە (هۆکار، کات، لای کێ) — None ئەگەر باند نەکراوە."""
+        u = self.get_user(uid)
+        ban = (u or {}).get("ban")
+        return ban if (ban and ban.get("on")) else None
+
+    def ban_user(self, uid, reason: str, by="") -> bool:
+        """باندکردنی بەکارهێنەر بە هۆکارەوە — هۆکارەکە بۆ خۆی پیشان دەدرێت."""
+        u = self.get_user(uid)
+        if not u:
+            return False
+        u["ban"] = {"on": True,
+                    "reason": (reason or "").strip()[:300],
+                    "by": str(by or ""),
+                    "at": int(time.time())}
+        self.save()
+        return True
+
+    def unban_user(self, uid) -> bool:
+        """لادانەوەی باند — بەکارهێنەرەکە دەگەڕێتەوە بۆ کارکردنی ئاسایی."""
+        u = self.get_user(uid)
+        if not u:
+            return False
+        if "ban" in u:
+            del u["ban"]
+            self.save()
+        return True
+
+    def delete_user(self, uid) -> bool:
+        """سڕینەوەی تەواوی هەژمار: پرۆفایل، ئامار، فڵاشکارت، دانیشتە و ویزاردی چالاک.
+        بەکارهێنەرەکە وەک یەکەم جار دەگەڕێتەوە سەرەتا."""
+        key = str(uid)
+        if key not in self._db["users"]:
+            return False
+        del self._db["users"][key]
+        self._db["sessions"].pop(key, None)
+        self._db["wizard"].pop(key, None)
+        self.save()
+        return True
+
     def count_teacher_users(self) -> Tuple[int, int]:
         """(قوتابیەکان، ئەوانی تر) — لە وەڵامی پرسیاری تۆمارکردنەوە."""
         students = others = 0

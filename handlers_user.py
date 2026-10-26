@@ -67,6 +67,27 @@ async def alert(query, text, kb=None):
             pass
 
 
+async def reject_banned(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """دەرگای باند — ئەگەر بەکارهێنەرەکە باندکراو بێت، هۆکارەکەی پیشان دەدرێت
+    و هەموو داواکارییەکانی ڕادەگیرێت. True ئەگەر ڕاگیرابێت."""
+    storage = _storage(context)
+    user = update.effective_user
+    if not user or storage.is_admin(user.id) or not storage.is_banned(user.id):
+        return False
+    ban = storage.get_ban_info(user.id) or {}
+    reason = (ban.get("reason") or "").strip()
+    text = T.BAN_NOTICE.format(reason=reason or "—")
+    msg = update.effective_message
+    try:
+        if msg is not None:
+            await msg.reply_text(text)
+        else:
+            await context.bot.send_message(user.id, text)
+    except Exception:
+        pass
+    return True
+
+
 def chunk_text(s: str, size: int = 3500):
     parts, cur = [], ""
     for line in s.split("\n"):
@@ -115,6 +136,9 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg, user = update.effective_message, update.effective_user
     if not msg or not user:
         return
+    # دەرگای باند — بەکارهێنەری باندکراو ناتوانێت بۆتەکە بەکاربهێنێت
+    if await reject_banned(update, context):
+        return
     if update.effective_chat:
         storage.clear_wizard(update.effective_chat.id)
     # تۆمارکردنی یەکەم جار: ناو + قوتابی مامۆستا
@@ -144,6 +168,8 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if await reject_banned(update, context):
+        return
     if update.effective_message:
         await update.effective_message.reply_text(T.HELP, reply_markup=K.home_only())
 
