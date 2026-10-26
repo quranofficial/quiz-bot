@@ -39,6 +39,12 @@
        ]
       }
      ]
+    },
+    {
+     "id": "f16a89c3f",
+     "type": "folder",
+     "title": "کەرتی یەکەم",
+     "children": []
     }
    ]
   }
@@ -71,6 +77,6 @@
  },
  "wizard": {},
  "meta": {
-  "updated_at": 1793027273
+  "updated_at": 1793027303
  }
 }
