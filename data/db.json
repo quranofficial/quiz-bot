@@ -16,7 +16,32 @@
      "id": "f06de57a4",
      "type": "folder",
      "title": "کەرتی یەکەم",
-     "children": []
+     "children": [
+      {
+       "id": "q0f93726b",
+       "type": "question",
+       "text": "ژمارەی ئێسکەکان: جەستەی مرۆڤێکی پێگەیشتوو لە ___ ئێسکی {{جیاواز}} پێکدێت.",
+       "image": "AgACAgIAAxkBAAPXat-jCtCKeZm-HSaPwep_ZVZdvh0AAlAkaxtpTPlKY6EnAbRX_MQBAAMCAAN4AAM9BA",
+       "options": [
+        {
+         "text": "A. ٢٠٤",
+         "correct": false
+        },
+        {
+         "text": "B. ٢٠٥",
+         "correct": false
+        },
+        {
+         "text": "C. ٢٠٦",
+         "correct": true
+        },
+        {
+         "text": "D. ٢٠٧",
+         "correct": false
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -102,37 +127,8 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "addq",
-   "step": "options",
-   "data": {
-    "folder_id": "f06de57a4",
-    "image": "AgACAgIAAxkBAAPXat-jCtCKeZm-HSaPwep_ZVZdvh0AAlAkaxtpTPlKY6EnAbRX_MQBAAMCAAN4AAM9BA",
-    "text": "ژمارەی ئێسکەکان: جەستەی مرۆڤێکی پێگەیشتوو لە ___ ئێسکی {{جیاواز}} پێکدێت.",
-    "options": [
-     {
-      "text": "A. ٢٠٤",
-      "correct": false
-     },
-     {
-      "text": "B. ٢٠٥",
-      "correct": false
-     },
-     {
-      "text": "C. ٢٠٦",
-      "correct": false
-     },
-     {
-      "text": "D. ٢٠٧",
-      "correct": false
-     }
-    ],
-    "prompt": 214
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793041232
+  "updated_at": 1793041238
  }
 }
