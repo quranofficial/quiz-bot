@@ -55,16 +55,17 @@
  "sessions": {},
  "wizard": {
   "1373569356": {
-   "flow": "qnev",
-   "step": "end",
+   "flow": "qnsrc",
+   "step": "folder",
    "data": {
-    "edit": false,
+    "path": [],
     "title": "تێست",
-    "start": "21:00"
+    "start": "21:00",
+    "end": "21:50"
    }
   }
  },
  "meta": {
-  "updated_at": 1793038598
+  "updated_at": 1793038604
  }
 }
