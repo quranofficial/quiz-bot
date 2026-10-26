@@ -137,10 +137,13 @@
    "uid": 1373569356
   },
   "8634363348": {
-   "name": "Rio",
-   "teacher": null,
+   "name": "Ahmed",
+   "teacher": false,
    "username": "@Rio_K101",
    "joined": 1793046242,
+   "stats": {},
+   "flashcards": [],
+   "last_quiz": null,
    "uid": 8634363348
   }
  },
@@ -148,16 +151,8 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "8634363348": {
-   "flow": "reg",
-   "step": "teacher",
-   "data": {
-    "name": "Ahmed"
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793046641
+  "updated_at": 1793046643
  }
 }
