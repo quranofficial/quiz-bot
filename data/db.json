@@ -53,8 +53,14 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "1373569356": {
+   "flow": "bcast",
+   "step": "msg",
+   "data": {}
+  }
+ },
  "meta": {
-  "updated_at": 1793038475
+  "updated_at": 1793038483
  }
 }
