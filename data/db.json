@@ -13,12 +13,6 @@
    "title": "بەندی یەکەم",
    "children": [
     {
-     "id": "fbaa5f163",
-     "type": "folder",
-     "title": "کەرتی دووەم",
-     "children": []
-    },
-    {
      "id": "f06de57a4",
      "type": "folder",
      "title": "کەرتی سێیەم",
@@ -110,6 +104,6 @@
  "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793041052
+  "updated_at": 1793041065
  }
 }
