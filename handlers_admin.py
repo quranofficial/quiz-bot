@@ -321,23 +321,6 @@ async def start_add_question(query, context, fid: str):
     await _edit_prompt(context, chat, w, T.WIZ_Q_IMAGE, K.wiz_image_kb())
 
 
-def _apply_highlight(qtext: str, word: str):
-    """وشەیەک لە دەقی پرسیاردا بە {{...}} دیار دەکات (🔴 لە تێلێگرام).
-    گەڕانەوە: (دەقی نوێ، دۆزرایەوە یان نا)"""
-    w = (word or "").strip()
-    if not w:
-        return qtext, False
-    if w in qtext:
-        return qtext.replace(w, "{{" + w + "}}", 1), True
-    # بەبێ جیاوازی پیتی گەورە/بچووک
-    low = qtext.lower()
-    idx = low.find(w.lower())
-    if idx >= 0:
-        real = qtext[idx:idx + len(w)]
-        return qtext[:idx] + "{{" + real + "}}" + qtext[idx + len(w):], True
-    return qtext, False
-
-
 async def start_new_folder(query, context, parent: str):
     storage = _storage(context)
     chat = query.message.chat_id
@@ -460,18 +443,6 @@ async def route_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE, w: di
         elif step == "text":
             if msg.text and msg.text.strip():
                 data["text"] = msg.text.strip()[:3500]
-                _set_step(storage, chat, w, "highlight")
-                await _edit_prompt(context, chat, w, T.WIZ_Q_HIGHLIGHT,
-                                   K.wiz_highlight_kb())
-            else:
-                await msg.reply_text(T.WIZ_NEED_TEXT)
-        elif step == "highlight":
-            if msg.text and msg.text.strip():
-                new_text, found = _apply_highlight(data.get("text") or "", msg.text.strip()[:60])
-                if not found:
-                    await msg.reply_text(T.WIZ_HL_NOT_FOUND)
-                    return
-                data["text"] = new_text
                 _set_step(storage, chat, w, "options")
                 await _edit_prompt(context, chat, w,
                                    T.WIZ_Q_OPTIONS.format(opts=T.WIZ_Q_OPTIONS_EMPTY),
@@ -516,18 +487,6 @@ async def route_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE, w: di
         elif step == "text":
             if msg.text and msg.text.strip():
                 data["text"] = msg.text.strip()[:3500]
-                _set_step(storage, chat, w, "highlight")
-                await _edit_prompt(context, chat, w, T.WIZ_Q_HIGHLIGHT,
-                                   K.wiz_highlight_kb())
-            else:
-                await msg.reply_text(T.WIZ_NEED_TEXT)
-        elif step == "highlight":
-            if msg.text and msg.text.strip():
-                new_text, found = _apply_highlight(data.get("text") or "", msg.text.strip()[:60])
-                if not found:
-                    await msg.reply_text(T.WIZ_HL_NOT_FOUND)
-                    return
-                data["text"] = new_text
                 _set_step(storage, chat, w, "options")
                 await _edit_prompt(context, chat, w,
                                    T.WIZ_Q_OPTIONS.format(opts=T.WIZ_Q_OPTIONS_EMPTY),
@@ -676,17 +635,6 @@ async def wx_skipimg(query, context):
         return await _wiz_gone(query)
     _set_step(storage, chat, w, "text")
     await _edit_prompt(context, chat, w, T.WIZ_Q_TEXT, None)
-
-
-async def wx_nohl(query, context):
-    """پشتگوێخستنی هەنگاوی وشەی سوور — ڕاستەوخۆ بۆ هەڵبژاردەکان."""
-    storage, chat, w = _wiz_of(query, context)
-    if not w or w.get("flow") not in ("addq", "qnbank") or w.get("step") != "highlight":
-        return await _wiz_gone(query)
-    _set_step(storage, chat, w, "options")
-    await _edit_prompt(context, chat, w,
-                       T.WIZ_Q_OPTIONS.format(opts=T.WIZ_Q_OPTIONS_EMPTY),
-                       K.wiz_options_kb(0))
 
 
 async def wx_done(query, context):

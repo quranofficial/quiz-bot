@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-"""خاڵی دەستپێکی بۆتی کویز — ٢٤/٧ پۆڵینگ دەکات (لە GitHub Actions بۆ ٥ کاتژمێر و ٥٠
+"""خاڵی دەستپێکی بۆتی تاقیکردنەوە — ٢٤/٧ پۆڵینگ دەکات (لە GitHub Actions بۆ ٥ کاتژمێر و ٥٠
 خولەک بەبێ پشوو، پاشان دانیشتی داهاتوو جێگەی دەگرێتەوە).
 
 تایبەتمەندییەکان:
-• Defaults(protect_content=True) — هیچ پەیامێکی بۆت ناتوانرێت forward یان save بکرێت.
+• Defaults(protect_content=True) — پەیامەکانی بۆ بەکارهێنەرانی ئاسایی ناتوانرێت
+  forward یان save یان copy بکرێت؛ تەنها ئادمینەکان ئازادن (پەیامەکانی بۆ ئادمین
+  بە protect_content=False دەنێردرێن).
 • concurrent_updates(True) — چەندین بەکارهێنەر لە هەمان کاتدا وەڵام وەردەگرن.
 • خشتەی تاقیکردنەوەی شەوانە — هەر ٢٠ چرکە پشکنین، لە کۆتاییدا ڕیزبەندی بۆ بەژداران.
 """
@@ -66,7 +68,8 @@ async def _post_init(app: Application) -> None:
         import handlers_admin
         for aid in storage.all_admin_ids():
             await handlers_admin.ensure_admin_commands(app.bot, aid)
-    log.info("بۆت ئامادەیە ✅ (protect_content=ON, concurrent_updates=ON)")
+    log.info("بۆت ئامادەیە ✅ (protect_content=ON بۆ بەکارهێنەران / OFF بۆ ئادمین, "
+             "concurrent_updates=ON)")
 
 
 async def _error(update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -82,6 +85,44 @@ async def _error(update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 pass
         os._exit(0)
     log.error("هەڵەیەک ڕوویدا: %s", err, exc_info=err)
+
+
+# ---------------- پاراستنی ناوەڕۆک: تەنها ئادمین forward/save/copy بکات ----------------
+
+# ئەو ڕێگاکانی Bot کە پەیام دەنێرن — هەموویان protect_content یان هەیە
+_PROTECT_METHODS = ("send_message", "send_photo", "send_document", "send_video",
+                    "send_animation", "send_audio", "send_voice", "send_video_note",
+                    "send_sticker", "send_media_group")
+
+
+def exempt_admin_sends(app: Application, storage: Storage) -> None:
+    """Defaults(protect_content=True) بۆ هەموو پەیامەکان کار دەکات؛
+    لێرەدا هەموو ڕێگاکانی ناردن دادەپۆشرێن بۆ ئەوەی کاتێک ئامانجی پەیامەکە
+    چاتی ئادمینێک بێت، پەیامەکە بە protect_content=False بێت — بۆیە تەنها
+    ئادمین دەتوانێت forward/save/copy بکات و بەکارهێنەرانی ئاسایی ناتوانن."""
+    bot_cls = type(app.bot)
+
+    def _to_int(chat_id):
+        try:
+            return int(getattr(chat_id, "chat_id", chat_id))
+        except (TypeError, ValueError):
+            return None
+
+    for name in _PROTECT_METHODS:
+        orig = getattr(bot_cls, name, None)
+        if orig is None:
+            continue
+
+        def _make(orig):
+            async def wrapper(self, chat_id, *args, **kwargs):
+                cid = _to_int(chat_id)
+                if (cid is not None and kwargs.get("protect_content") is None
+                        and storage.is_admin(cid)):
+                    kwargs["protect_content"] = False
+                return await orig(self, chat_id, *args, **kwargs)
+            return wrapper
+
+        setattr(bot_cls, name, _make(orig))
 
 
 # ---------------- خشتەی تاقیکردنەوەی شەوانە ----------------
@@ -174,7 +215,7 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         if data.startswith("reg:"):
             return await handlers_user.cb_reg(q, context, data[4:])
 
-        # ---------- تاقیکردنەوەی تایبەت / ڕاپۆرت / فڵاش کارد / شەوانە / ئامار ----------
+        # ---------- تاقیکردنەوەی تایبەت / ڕاپۆرت / فڵاشکارت / شەوانە / ئامار ----------
         if data == "mq" or data.startswith("mq:"):
             return await handlers_user.cb_mq(q, context, data)
         if data == "rp" or data.startswith("rp:pick:") or data == "rp:skip":
@@ -333,8 +374,6 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
         if data == "wx:skipimg":
             return await handlers_admin.wx_skipimg(q, context)
-        if data == "wx:nohl":
-            return await handlers_admin.wx_nohl(q, context)
         if data == "wx:done":
             return await handlers_admin.wx_done(q, context)
         if data == "wx:cancel":
@@ -435,6 +474,8 @@ def main():
 
     app.bot_data["storage"] = storage
     app.bot_data["gitsync"] = gitsync
+    # تەنها ئادمین بتوانێت forward/save/copy بکات — پەیامەکانی ئادمین پارێزراو نین
+    exempt_admin_sends(app, storage)
     app.add_error_handler(_error)
 
     app.add_handler(CommandHandler(["start", "menu"], handlers_user.cmd_start))

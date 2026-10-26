@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """کۆرەی داتا: مێژووی بەش/پرسیار (دارچین بێ سنوور)، پەڕەکان، ئادمینەکان،
-دانیشتەکانی کویز و دۆخی ویزاردی ئادمین — هەموو لە فایلی data/db.json هەڵدەگیرێت."""
+دانیشتەکانی تاقیکردنەوە و دۆخی ویزاردی ئادمین — هەموو لە فایلی data/db.json هەڵدەگیرێت."""
 
 import json
 import os
@@ -25,8 +25,8 @@ DEFAULT_DB: Dict[str, Any] = {
     "users": {},                             # پرۆفایلی بەکارهێنەرانی تۆمارکراو
     "tickets": {},                           # پرسیارەکانی بەکارهێنەران (پرسیار بکە)
     "reports": {},                           # ڕاپۆرتەکانی کێشەی پرسیارەکان
-    "events": {},                            # تاقیکردنەوەی شەوانە (کویزی کاتدار)
-    "sessions": {},                          # دانیشتە چالاکەکانی کویز
+    "events": {},                            # تاقیکردنەوەی شەوانە (تاقیکردنەوەی کاتدار)
+    "sessions": {},                          # دانیشتە چالاکەکانی تاقیکردنەوە
     "wizard": {},                            # دۆخی ویزاردەکان (ئادمین + بەکارهێنەر)
     "meta": {"updated_at": 0},
 }
@@ -397,7 +397,7 @@ class Storage:
     def count_open_tickets(self) -> int:
         return len(self.open_tickets())
 
-    # ---- ڕاپۆرتەکانی کێشە (پرسیاری گومانلێکراو لە کۆتایی کویز) ----
+    # ---- ڕاپۆرتەکانی کێشە (پرسیاری گومانلێکراو لە کۆتایی تاقیکردنەوە) ----
 
     def next_report_id(self) -> int:
         self._db["settings"]["report_seq"] = int(self._db["settings"].get("report_seq", 0)) + 1
@@ -447,7 +447,7 @@ class Storage:
             self.save()
         return len(closed)
 
-    # ---- تاقیکردنەوەی شەوانە (کویزی کاتدار) ----
+    # ---- تاقیکردنەوەی شەوانە (تاقیکردنەوەی کاتدار) ----
 
     def get_event(self) -> Optional[dict]:
         return self._db["events"].get("current")
@@ -477,7 +477,7 @@ class Storage:
         self.save()
         return len(ev.get("bank") or [])
 
-    # ---- فڵاش کاردی بەکارهێنەران ----
+    # ---- فڵاشکارتی بەکارهێنەران ----
 
     def get_flashcards(self, uid) -> List[dict]:
         u = self.get_user(uid)
@@ -506,7 +506,7 @@ class Storage:
     # ---- ئامارەکانی بەکارهێنەران ----
 
     def record_quiz_result(self, uid, folder_title: str, correct: int, total: int):
-        """تۆمارکردنی ئەنجامی کویز لە پرۆفایلی بەکارهێنەردا (بۆ ئاماری ئادمین)."""
+        """تۆمارکردنی ئەنجامی تاقیکردنەوە لە پرۆفایلی بەکارهێنەردا (بۆ ئاماری ئادمین)."""
         u = self.get_user(uid)
         if u is None:
             return
@@ -547,7 +547,7 @@ class Storage:
         return out
 
     def set_last_quiz(self, uid, info: dict):
-        """هەڵگرتنی زانیاری دوایین کویز — بۆ دوگمەی ڕاپۆرتکردنی کێشە."""
+        """هەڵگرتنی زانیاری دوایین تاقیکردنەوە — بۆ دوگمەی ڕاپۆرتکردنی کێشە."""
         u = self.get_user(uid)
         if u is None:
             return
@@ -577,7 +577,7 @@ class Storage:
                 return n, False
         return self.add_folder(parent_id, title), True
 
-    # ---- دانیشتەکانی کویز ----
+    # ---- دانیشتەکانی تاقیکردنەوە ----
 
     def get_session(self, uid):
         return self._db["sessions"].get(str(uid))

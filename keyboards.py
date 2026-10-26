@@ -104,7 +104,7 @@ def custom_quiz_kb(children, depth: int, sel_ids, n_sel: int,
     return InlineKeyboardMarkup(rows)
 
 
-# --- فڵاش کارد ---
+# --- فڵاشکارت ---
 
 def fc_menu(n: int) -> InlineKeyboardMarkup:
     rows = [[btn(T.FC_BTN_ADD, "fc:add")]]
@@ -151,7 +151,7 @@ def fc_del_list(cards) -> InlineKeyboardMarkup:
 # --- ڕاپۆرتکردنی کێشە (لای بەکارهێنەر) ---
 
 def report_pick_kb(qids, tree) -> InlineKeyboardMarkup:
-    """لیستی پرسیارەکانی دوایین کویز بۆ ڕاپۆرتکردن."""
+    """لیستی پرسیارەکانی دوایین تاقیکردنەوە بۆ ڕاپۆرتکردن."""
     rows = []
     for i, qid in enumerate(qids[:25], 1):
         node = st.find_node(tree, qid)
@@ -550,11 +550,6 @@ def wiz_image_kb() -> InlineKeyboardMarkup:
 
 def wiz_cancel_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([[btn(T.WIZ_BTN_STOP, "wx:cancel")]])
-
-
-def wiz_highlight_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([[btn(T.WIZ_BTN_NO_HL, "wx:nohl")],
-                                 [btn(T.WIZ_BTN_STOP, "wx:cancel")]])
 
 
 def wiz_options_kb(n: int) -> InlineKeyboardMarkup:

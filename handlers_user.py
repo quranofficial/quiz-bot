@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-"""لای بەکارهێنەر: مینیوی سەرەکی، ڕاوکردنی بەشەکان، کویز (لەگەڵ هەڵبژاردنی ژمارە)،
-تاقیکردنەوەی تایبەت، ڕاپۆرتکردنی کێشە، فڵاش کارد، تاقیکردنەوەی شەوانە و ئامار."""
+"""لای بەکارهێنەر: مینیوی سەرەکی، ڕاوکردنی بەشەکان، تاقیکردنەوە (لەگەڵ هەڵبژاردنی ژمارە)،
+تاقیکردنەوەی تایبەت، ڕاپۆرتکردنی کێشە، فڵاشکارت، تاقیکردنەوەی شەوانە و ئامار."""
 
 import random
 import time
+import datetime as _dt
 
 from telegram import Update
 from telegram.error import BadRequest
@@ -41,7 +42,7 @@ async def edit_message(query, text, kb=None):
 
 
 async def edit_any(query, text, kb=None):
-    """دەستکاری پەیامێک کە لەوانەیە وێنە بێت (کاپشن) — بۆ فڵاش کارد."""
+    """دەستکاری پەیامێک کە لەوانەیە وێنە بێت (کاپشن) — بۆ فڵاشکارت."""
     try:
         await query.edit_message_text(text, reply_markup=kb)
         return
@@ -80,8 +81,10 @@ def chunk_text(s: str, size: int = 3500):
 
 
 def fmt_ts(ts) -> str:
+    """کاتی عێراق/کوردستان (UTC+3) — نەک کاتی سیستەم کە لە GitHub دا UTC ـە."""
     try:
-        return time.strftime("%Y-%m-%d %H:%M", time.localtime(int(ts)))
+        tz = _dt.timezone(_dt.timedelta(hours=3))
+        return _dt.datetime.fromtimestamp(int(ts), tz).strftime("%Y-%m-%d %H:%M")
     except (TypeError, ValueError):
         return "—"
 
@@ -148,7 +151,7 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ---------------- مینیو و بەشەکان ----------------
 
 async def cb_home(query, context):
-    """گەڕانەوە بۆ مینیوی سەرەکی — هەر ویزارد و دانیشتەیەکی کویز دەوەستێت."""
+    """گەڕانەوە بۆ مینیوی سەرەکی — هەر ویزارد و دانیشتەیەکی تاقیکردنەوە دەوەستێت."""
     storage = _storage(context)
     try:
         chat_id = query.message.chat_id
@@ -198,7 +201,7 @@ async def cb_nav(query, context, fid: str):
     await edit_message(query, text, kb)
 
 
-# ---------------- کویز: هەڵبژاردنی ژمارە + دەستپێکردن ----------------
+# ---------------- تاقیکردنەوە: هەڵبژاردنی ژمارە + دەستپێکردن ----------------
 
 async def cb_quiz(query, context, fid: str):
     """پیشاندانی ٣ بژاردە پێش دەستپێکردن: ١٠ / هەموو / ژمارەیەک دیاری بکە."""
@@ -246,7 +249,7 @@ async def _launch_quiz(context, chat_id, user, title, questions, folder_id,
 
 
 async def cb_qs(query, context, fid: str, mode: str):
-    """دەستپێکردنی کویز بە یەکێک لە بژاردەکان: ten / all / num."""
+    """دەستپێکردنی تاقیکردنەوە بە یەکێک لە بژاردەکان: ten / all / num."""
     storage = _storage(context)
     chat_id = query.message.chat_id
     user = query.from_user
@@ -472,7 +475,7 @@ async def finish_quiz(context, chat_id, session):
         storage.del_session(uid)
 
 
-# ---------------- تاقیکردنەوەی تایبەت (چەند بەشێک لە یەک کویز) ----------------
+# ---------------- تاقیکردنەوەی تایبەت (چەند بەشێک لە یەک تاقیکردنەوە) ----------------
 
 def _is_ancestor_or_descendant(tree, a: str, b: str) -> bool:
     """ئایا a و b باپیر-نەوەن (لە هەر ئاراستەیەکدا)؟"""
@@ -685,7 +688,7 @@ async def _send_report(query, context, w: dict, comment: str):
         pass
 
 
-# ---------------- فڵاش کارد ----------------
+# ---------------- فڵاشکارت ----------------
 
 async def cb_fc(query, context, data: str):
     storage = _storage(context)
@@ -877,7 +880,7 @@ async def cb_reg(query, context, payload: str):
     data = w.get("data") or {}
     user = query.from_user
     name = data.get("name") or user.first_name or "بەکارهێنەر"
-    # پاراستنی ئامار و فڵاش کاردە کۆنەکان لە کاتی نوێکردنەوەی پرۆفایل
+    # پاراستنی ئامار و فڵاشکارتە کۆنەکان لە کاتی نوێکردنەوەی پرۆفایل
     old = storage.get_user(user.id) or {}
     storage.save_user(user.id, {
         "name": name,
@@ -1139,7 +1142,7 @@ async def cb_qn(query, context, data: str):
             return await cb_qn(query, context, "qn")
         if played:
             return await _qn_show_results(query, context, ev, uid)
-        # دەستپێکردنی کویزی ئیڤێنت — لە بەشەکان یان لە بەنکۆی پرسیارە نوێکان
+        # دەستپێکردنی تاقیکردنەوەی ئیڤێنت — لە بەشەکان یان لە بەنکۆی پرسیارە نوێکان
         src = ev.get("src") or {}
         title = ev.get("title", title)
         if (src.get("type") or "folder") == "bank":
