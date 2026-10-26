@@ -53,8 +53,14 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "1373569356": {
+   "flow": "impjson",
+   "step": "file",
+   "data": {}
+  }
+ },
  "meta": {
-  "updated_at": 1793038042
+  "updated_at": 1793038054
  }
 }
