@@ -53,8 +53,16 @@
  "reports": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "1373569356": {
+   "flow": "qnev",
+   "step": "title",
+   "data": {
+    "edit": false
+   }
+  }
+ },
  "meta": {
-  "updated_at": 1793038494
+  "updated_at": 1793038571
  }
 }
