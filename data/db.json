@@ -204,10 +204,13 @@
    "uid": 8634363348
   },
   "7400338395": {
-   "name": "Mazn sherwani",
-   "teacher": null,
+   "name": "mazn",
+   "teacher": true,
    "username": "",
    "joined": 1793109880,
+   "stats": {},
+   "flashcards": [],
+   "last_quiz": null,
    "uid": 7400338395
   }
  },
@@ -216,14 +219,8 @@
  "inbox": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "7400338395": {
-   "flow": "reg",
-   "step": "name",
-   "data": {}
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793109880
+  "updated_at": 1793109896
  }
 }
