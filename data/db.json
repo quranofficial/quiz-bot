@@ -1037,7 +1037,7 @@
     "q2dc035ed",
     "q45978eb3"
    ],
-   "idx": 23,
+   "idx": 28,
    "answers": [
     {
      "qid": "q0f93726b",
@@ -1222,6 +1222,46 @@
      "chosen": "C) خوێن",
      "right": "C) خوێن",
      "has_image": false
+    },
+    {
+     "qid": "qc28e9acf",
+     "correct": true,
+     "qtext": "کام لەمانە نموونە نییە بۆ ڕووکەشە شانە؟",
+     "chosen": "C) چینی دەرەکی پێست",
+     "right": "C) چینی دەرەکی پێست",
+     "has_image": false
+    },
+    {
+     "qid": "qcec55d52",
+     "correct": true,
+     "qtext": "لەشی مرۆڤ لە چەند جۆر شانەی سەرەکی پێکهاتووە؟",
+     "chosen": "C) 5",
+     "right": "C) 5",
+     "has_image": false
+    },
+    {
+     "qid": "qb68cd5e5",
+     "correct": true,
+     "qtext": "کام ماسولکە هێزی پاڵنانی خوێنی هەیە؟",
+     "chosen": "C) ڕووکەشە",
+     "right": "C) ڕووکەشە",
+     "has_image": false
+    },
+    {
+     "qid": "q37d8fd59",
+     "correct": true,
+     "qtext": "دەمارەشانە لە کام ئەندامانە پێکهاتووە؟",
+     "chosen": "C) پێست، موو و نینۆک",
+     "right": "C) پێست، موو و نینۆک",
+     "has_image": false
+    },
+    {
+     "qid": "qeca9430f",
+     "correct": true,
+     "qtext": "خانەکانی خوێن لە کام جۆر نیوانە ماددەدا دەجوڵێن؟",
+     "chosen": "C) شلی (پلازما)",
+     "right": "C) شلی (پلازما)",
+     "has_image": false
     }
    ],
    "ts": 1793120749.8388314,
@@ -1242,6 +1282,6 @@
   }
  },
  "meta": {
-  "updated_at": 1793120792
+  "updated_at": 1793120800
  }
 }
