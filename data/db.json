@@ -7,7 +7,9 @@
   "menu_labels": {},
   "menu_extra": []
  },
- "admins": [],
+ "admins": [
+  8634363348
+ ],
  "tree": [
   {
    "id": "f_sample_sec",
@@ -236,16 +238,8 @@
  "inbox": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "addadmin",
-   "step": "id",
-   "data": {
-    "prompt": 651
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793111267
+  "updated_at": 1793111286
  }
 }
