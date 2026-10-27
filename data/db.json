@@ -1037,7 +1037,7 @@
     "q2dc035ed",
     "q45978eb3"
    ],
-   "idx": 13,
+   "idx": 17,
    "answers": [
     {
      "qid": "q0f93726b",
@@ -1142,6 +1142,38 @@
      "chosen": "C) ئەندام",
      "right": "C) ئەندام",
      "has_image": false
+    },
+    {
+     "qid": "q231f45cd",
+     "correct": true,
+     "qtext": "کام لەمانە فرمانی دەمارەشانە نییە؟",
+     "chosen": "C) دەردانی لینجە ماددە بۆ گرتنی وردیلەکان",
+     "right": "C) دەردانی لینجە ماددە بۆ گرتنی وردیلەکان",
+     "has_image": false
+    },
+    {
+     "qid": "qa9ff26ae",
+     "correct": true,
+     "qtext": "جوڵاندنی ئێسک بە کام کۆئەندام دەبێت؟",
+     "chosen": "C) سوڕان",
+     "right": "C) سوڕان",
+     "has_image": false
+    },
+    {
+     "qid": "q5a5b790c",
+     "correct": true,
+     "qtext": "کام لەمانە جۆرێکی ماسولکە شانە نییە؟",
+     "chosen": "C) ڕووکەشە",
+     "right": "C) ڕووکەشە",
+     "has_image": false
+    },
+    {
+     "qid": "q4a829bca",
+     "correct": true,
+     "qtext": "پەنکریاس بەشێکە لە کام دوو کۆئەندام؟",
+     "chosen": "C) دەمار و پۆشەر",
+     "right": "C) دەمار و پۆشەر",
+     "has_image": false
     }
    ],
    "ts": 1793120749.8388314,
@@ -1162,6 +1194,6 @@
   }
  },
  "meta": {
-  "updated_at": 1793120773
+  "updated_at": 1793120782
  }
 }
