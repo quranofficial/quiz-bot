@@ -209,25 +209,25 @@
    "username": "",
    "joined": 1793109880,
    "stats": {
-    "quizzes": 1,
-    "total": 2,
-    "correct": 1,
-    "last_quiz_at": 1793109955,
+    "quizzes": 2,
+    "total": 4,
+    "correct": 3,
+    "last_quiz_at": 1793109988,
     "by_folder": {
      "تاقیکردنەوەی گشتی": {
-      "q": 2,
-      "c": 1
+      "q": 4,
+      "c": 3
      }
     }
    },
    "flashcards": [],
    "last_quiz": {
     "qids": [
-     "q0f93726b",
-     "q090342db"
+     "q090342db",
+     "q0f93726b"
     ],
     "title": "تاقیکردنەوەی گشتی",
-    "ts": 1793109955
+    "ts": 1793109988
    },
    "uid": 7400338395
   }
@@ -236,35 +236,9 @@
  "reports": {},
  "inbox": {},
  "events": {},
- "sessions": {
-  "7400338395": {
-   "uid": 7400338395,
-   "folder_id": "root",
-   "folder_title": "تاقیکردنەوەی گشتی",
-   "qids": [
-    "q090342db",
-    "q0f93726b"
-   ],
-   "idx": 1,
-   "answers": [
-    {
-     "qid": "q090342db",
-     "correct": true,
-     "qtext": "Test",
-     "chosen": "D) D. All Correct",
-     "right": "D) D. All Correct",
-     "has_image": false
-    }
-   ],
-   "ts": 1793109973.75329,
-   "src": "section",
-   "event_id": null,
-   "date": null,
-   "extra": {}
-  }
- },
+ "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793109984
+  "updated_at": 1793109988
  }
 }
