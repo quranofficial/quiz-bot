@@ -226,16 +226,8 @@
  "inbox": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "impfile",
-   "step": "folder",
-   "data": {
-    "path": []
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793107649
+  "updated_at": 1793107655
  }
 }
