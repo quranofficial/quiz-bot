@@ -230,9 +230,26 @@
  "reports": {},
  "inbox": {},
  "events": {},
- "sessions": {},
+ "sessions": {
+  "1373569356": {
+   "uid": 1373569356,
+   "folder_id": "root",
+   "folder_title": "تاقیکردنەوەی گشتی",
+   "qids": [
+    "q0f93726b",
+    "q090342db"
+   ],
+   "idx": 0,
+   "answers": [],
+   "ts": 1793111134.1880999,
+   "src": "section",
+   "event_id": null,
+   "date": null,
+   "extra": {}
+  }
+ },
  "wizard": {},
  "meta": {
-  "updated_at": 1793111124
+  "updated_at": 1793111134
  }
 }
