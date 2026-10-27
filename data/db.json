@@ -901,18 +901,18 @@
    "username": "@ismahil_312",
    "joined": 1793046229,
    "stats": {
-    "quizzes": 2,
-    "total": 3,
-    "correct": 2,
-    "last_quiz_at": 1793111138,
+    "quizzes": 3,
+    "total": 36,
+    "correct": 32,
+    "last_quiz_at": 1793120812,
     "by_folder": {
      "کەرتی یەکەم": {
       "q": 1,
       "c": 1
      },
      "تاقیکردنەوەی گشتی": {
-      "q": 2,
-      "c": 1
+      "q": 35,
+      "c": 31
      }
     }
    },
@@ -927,10 +927,41 @@
    "last_quiz": {
     "qids": [
      "q0f93726b",
-     "q090342db"
+     "q6a76fefb",
+     "q28258ee7",
+     "q84294ba4",
+     "q33553d71",
+     "qba72c758",
+     "q82f4febc",
+     "q3bd127d0",
+     "q4760d69a",
+     "q398ba98b",
+     "q46251c15",
+     "q80cb1cf0",
+     "q4e43fb88",
+     "q231f45cd",
+     "qa9ff26ae",
+     "q5a5b790c",
+     "q4a829bca",
+     "q07dd945e",
+     "q462caebb",
+     "q090342db",
+     "q224c9b7f",
+     "qfa1134c1",
+     "q14cca15d",
+     "qc28e9acf",
+     "qcec55d52",
+     "qb68cd5e5",
+     "q37d8fd59",
+     "qeca9430f",
+     "qfc3e6a2f",
+     "q512edb90",
+     "q4bc86860",
+     "q2dc035ed",
+     "q45978eb3"
     ],
     "title": "تاقیکردنەوەی گشتی",
-    "ts": 1793111138
+    "ts": 1793120812
    },
    "uid": 1373569356,
    "staff": true
@@ -997,312 +1028,7 @@
  "reports": {},
  "inbox": {},
  "events": {},
- "sessions": {
-  "1373569356": {
-   "uid": 1373569356,
-   "folder_id": "root",
-   "folder_title": "تاقیکردنەوەی گشتی",
-   "qids": [
-    "q0f93726b",
-    "q6a76fefb",
-    "q28258ee7",
-    "q84294ba4",
-    "q33553d71",
-    "qba72c758",
-    "q82f4febc",
-    "q3bd127d0",
-    "q4760d69a",
-    "q398ba98b",
-    "q46251c15",
-    "q80cb1cf0",
-    "q4e43fb88",
-    "q231f45cd",
-    "qa9ff26ae",
-    "q5a5b790c",
-    "q4a829bca",
-    "q07dd945e",
-    "q462caebb",
-    "q090342db",
-    "q224c9b7f",
-    "qfa1134c1",
-    "q14cca15d",
-    "qc28e9acf",
-    "qcec55d52",
-    "qb68cd5e5",
-    "q37d8fd59",
-    "qeca9430f",
-    "qfc3e6a2f",
-    "q512edb90",
-    "q4bc86860",
-    "q2dc035ed",
-    "q45978eb3"
-   ],
-   "idx": 32,
-   "answers": [
-    {
-     "qid": "q0f93726b",
-     "correct": true,
-     "qtext": "ژمارەی ئێسکەکان: جەستەی مرۆڤێکی پێگەیشتوو لە ___ ئێسکی جیاواز پێکدێت.",
-     "chosen": "C) C. ٢٠٦",
-     "right": "C) C. ٢٠٦",
-     "has_image": true
-    },
-    {
-     "qid": "q6a76fefb",
-     "correct": false,
-     "qtext": "ئەندام بریتییە لە:",
-     "chosen": "D) بچووکترین یەکەی لەش",
-     "right": "C) چەند کۆئەندامێک",
-     "has_image": false
-    },
-    {
-     "qid": "q28258ee7",
-     "correct": false,
-     "qtext": "ڕووکەشە شانەی ناوپۆشی لوولەکانی خوێن لە چەند چین خانە پێکهاتووە؟",
-     "chosen": "D) چەندین چین",
-     "right": "C) سێ چین",
-     "has_image": false
-    },
-    {
-     "qid": "q84294ba4",
-     "correct": true,
-     "qtext": "فرمانی بەستەرە شانە چییە؟",
-     "chosen": "C) دەردانی لینجە ماددە",
-     "right": "C) دەردانی لینجە ماددە",
-     "has_image": false
-    },
-    {
-     "qid": "q33553d71",
-     "correct": true,
-     "qtext": "فرمانی ڕووکەشە شانە چییە؟",
-     "chosen": "C) گرژبوون و خاوبوونەوە",
-     "right": "C) گرژبوون و خاوبوونەوە",
-     "has_image": false
-    },
-    {
-     "qid": "qba72c758",
-     "correct": true,
-     "qtext": "کام ماسولکە ئێسکەکانی قەدو پەلەکان و ڕوو دەجوڵێنێت؟",
-     "chosen": "C) دڵە",
-     "right": "C) دڵە",
-     "has_image": false
-    },
-    {
-     "qid": "q82f4febc",
-     "correct": true,
-     "qtext": "گەدە لە چەند جۆر شانەی سەرەکی پێکهاتووە؟",
-     "chosen": "C) سێ",
-     "right": "C) سێ",
-     "has_image": false
-    },
-    {
-     "qid": "q3bd127d0",
-     "correct": true,
-     "qtext": "پێست، موو و نینۆک پێکهاتەی کام کۆئەندامن؟",
-     "chosen": "C) پۆشەر",
-     "right": "C) پۆشەر",
-     "has_image": false
-    },
-    {
-     "qid": "q4760d69a",
-     "correct": true,
-     "qtext": "ئامانجی کۆئەندامی هەرس چییە؟",
-     "chosen": "C) گواستنەوەی خوێن",
-     "right": "C) گواستنەوەی خوێن",
-     "has_image": false
-    },
-    {
-     "qid": "q398ba98b",
-     "correct": true,
-     "qtext": "ڕیزبەندی ڕاستی ڕێکخستنی لەش لە بچووکترەوە بۆ گەورەتر کامەیە؟",
-     "chosen": "C) خانە ← شانە ← ئەندام ← کۆئەندام",
-     "right": "C) خانە ← شانە ← ئەندام ← کۆئەندام",
-     "has_image": false
-    },
-    {
-     "qid": "q46251c15",
-     "correct": true,
-     "qtext": "خانەی دەمارەشانە ناودەبرێت بە:",
-     "chosen": "C) پەیکەرەخانە",
-     "right": "C) پەیکەرەخانە",
-     "has_image": false
-    },
-    {
-     "qid": "q80cb1cf0",
-     "correct": true,
-     "qtext": "کام لەمانە ئەندامی کۆئەندامی هەرس نییە؟",
-     "chosen": "C) جگەر",
-     "right": "C) جگەر",
-     "has_image": false
-    },
-    {
-     "qid": "q4e43fb88",
-     "correct": true,
-     "qtext": "کامیان گەورەترین ئاستی ڕێکخستنە؟",
-     "chosen": "C) ئەندام",
-     "right": "C) ئەندام",
-     "has_image": false
-    },
-    {
-     "qid": "q231f45cd",
-     "correct": true,
-     "qtext": "کام لەمانە فرمانی دەمارەشانە نییە؟",
-     "chosen": "C) دەردانی لینجە ماددە بۆ گرتنی وردیلەکان",
-     "right": "C) دەردانی لینجە ماددە بۆ گرتنی وردیلەکان",
-     "has_image": false
-    },
-    {
-     "qid": "qa9ff26ae",
-     "correct": true,
-     "qtext": "جوڵاندنی ئێسک بە کام کۆئەندام دەبێت؟",
-     "chosen": "C) سوڕان",
-     "right": "C) سوڕان",
-     "has_image": false
-    },
-    {
-     "qid": "q5a5b790c",
-     "correct": true,
-     "qtext": "کام لەمانە جۆرێکی ماسولکە شانە نییە؟",
-     "chosen": "C) ڕووکەشە",
-     "right": "C) ڕووکەشە",
-     "has_image": false
-    },
-    {
-     "qid": "q4a829bca",
-     "correct": true,
-     "qtext": "پەنکریاس بەشێکە لە کام دوو کۆئەندام؟",
-     "chosen": "C) دەمار و پۆشەر",
-     "right": "C) دەمار و پۆشەر",
-     "has_image": false
-    },
-    {
-     "qid": "q07dd945e",
-     "correct": true,
-     "qtext": "چینی دەرەکی پێست لە کام جۆر خانە پێکهاتووە؟",
-     "chosen": "C) تەخت و مردوو",
-     "right": "C) تەخت و مردوو",
-     "has_image": false
-    },
-    {
-     "qid": "q462caebb",
-     "correct": true,
-     "qtext": "کام کۆئەندام پاشەڕۆ لە لەش دەردەکات و هاوسەنگی ئاو و کیمیکە ماددەکان دەپارێزێت؟",
-     "chosen": "C) زاوزێ",
-     "right": "C) زاوزێ",
-     "has_image": false
-    },
-    {
-     "qid": "q090342db",
-     "correct": false,
-     "qtext": "Test",
-     "chosen": "C) C.5",
-     "right": "D) D. All Correct",
-     "has_image": false
-    },
-    {
-     "qid": "q224c9b7f",
-     "correct": true,
-     "qtext": "شانە بریتییە لە:",
-     "chosen": "C) چەند ئەندامێکی جیاواز",
-     "right": "C) چەند ئەندامێکی جیاواز",
-     "has_image": false
-    },
-    {
-     "qid": "qfa1134c1",
-     "correct": true,
-     "qtext": "کام کۆئەندام ئۆکسجین بە دوانۆکسیدی کاربۆن ئاڵوگۆڕ دەکات؟",
-     "chosen": "C) هەرس",
-     "right": "C) هەرس",
-     "has_image": false
-    },
-    {
-     "qid": "q14cca15d",
-     "correct": true,
-     "qtext": "کام لەمانە جۆرێکی بەستەرە شانە نییە؟",
-     "chosen": "C) خوێن",
-     "right": "C) خوێن",
-     "has_image": false
-    },
-    {
-     "qid": "qc28e9acf",
-     "correct": true,
-     "qtext": "کام لەمانە نموونە نییە بۆ ڕووکەشە شانە؟",
-     "chosen": "C) چینی دەرەکی پێست",
-     "right": "C) چینی دەرەکی پێست",
-     "has_image": false
-    },
-    {
-     "qid": "qcec55d52",
-     "correct": true,
-     "qtext": "لەشی مرۆڤ لە چەند جۆر شانەی سەرەکی پێکهاتووە؟",
-     "chosen": "C) 5",
-     "right": "C) 5",
-     "has_image": false
-    },
-    {
-     "qid": "qb68cd5e5",
-     "correct": true,
-     "qtext": "کام ماسولکە هێزی پاڵنانی خوێنی هەیە؟",
-     "chosen": "C) ڕووکەشە",
-     "right": "C) ڕووکەشە",
-     "has_image": false
-    },
-    {
-     "qid": "q37d8fd59",
-     "correct": true,
-     "qtext": "دەمارەشانە لە کام ئەندامانە پێکهاتووە؟",
-     "chosen": "C) پێست، موو و نینۆک",
-     "right": "C) پێست، موو و نینۆک",
-     "has_image": false
-    },
-    {
-     "qid": "qeca9430f",
-     "correct": true,
-     "qtext": "خانەکانی خوێن لە کام جۆر نیوانە ماددەدا دەجوڵێن؟",
-     "chosen": "C) شلی (پلازما)",
-     "right": "C) شلی (پلازما)",
-     "has_image": false
-    },
-    {
-     "qid": "qfc3e6a2f",
-     "correct": true,
-     "qtext": "کۆئەندامی دەمار لە چ پێکدێت؟",
-     "chosen": "C) دڵ و لوولەکانی خوێن",
-     "right": "C) دڵ و لوولەکانی خوێن",
-     "has_image": false
-    },
-    {
-     "qid": "q512edb90",
-     "correct": true,
-     "qtext": "کام کۆئەندام شێوە بە لەش دەبەخشێت و ئەندامەکانی ناوەوە دەپارێزێت؟",
-     "chosen": "C) دەمار",
-     "right": "C) دەمار",
-     "has_image": false
-    },
-    {
-     "qid": "q4bc86860",
-     "correct": true,
-     "qtext": "نیوانە ماددە بریتییە لە:",
-     "chosen": "C) شلەی ناو خانە",
-     "right": "C) شلەی ناو خانە",
-     "has_image": false
-    },
-    {
-     "qid": "q2dc035ed",
-     "correct": true,
-     "qtext": "کام کۆئەندامەکان پێکەوە کار دەکەن بۆ دابەشکردنی خۆراکی هەرسکراو بەسەر هەموو لەشدا؟",
-     "chosen": "C) هەرس و سوڕان",
-     "right": "C) هەرس و سوڕان",
-     "has_image": false
-    }
-   ],
-   "ts": 1793120749.8388314,
-   "src": "section",
-   "event_id": null,
-   "date": null,
-   "extra": {}
-  }
- },
+ "sessions": {},
  "wizard": {
   "8634363348": {
    "flow": "mq",
@@ -1314,6 +1040,6 @@
   }
  },
  "meta": {
-  "updated_at": 1793120809
+  "updated_at": 1793120816
  }
 }
