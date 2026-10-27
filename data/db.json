@@ -84,42 +84,6 @@
    "title": "بەندی دووەم",
    "children": [
     {
-     "id": "q604f1935",
-     "type": "question",
-     "text": "7 خاڵی جێبەستن 0 ع",
-     "image": null,
-     "options": [
-      {
-       "text": "ڕەنوسی 3 پەلە پەیکەر پێک دێنێت.5 هەموویان راستن پ 3 ور چ",
-       "correct": false
-      },
-      {
-       "text": "تاقیکردنەوەی زیندەزانی 12 قڵا3.1 مامۆستای بابەت : مامۆستا ئارام خۆشناو \"ژ4 ]9]",
-       "correct": false
-      },
-      {
-       "text": "آت",
-       "correct": false
-      }
-     ]
-    },
-    {
-     "id": "q35fe0438",
-     "type": "question",
-     "text": "ئێسکەکانی کام کەلێن دەزووی کرکراگەیی له پێکهاتەیدا هەیه؟055 7 ئ 1",
-     "image": null,
-     "options": [
-      {
-       "text": "ح 3",
-       "correct": false
-      },
-      {
-       "text": "سینگە کەلێن",
-       "correct": false
-      }
-     ]
-    },
-    {
      "id": "q1137289a",
      "type": "question",
      "text": "کام لە مانە ڕاست نین:65555",
@@ -327,6 +291,6 @@
  "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793114927
+  "updated_at": 1793114935
  }
 }
