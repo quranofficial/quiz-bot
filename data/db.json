@@ -75,6 +75,12 @@
        ]
       }
      ]
+    },
+    {
+     "id": "f8aa9a49a",
+     "type": "folder",
+     "title": "کەرتی سێیەم",
+     "children": []
     }
    ]
   },
@@ -203,17 +209,8 @@
  "inbox": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "newfolder",
-   "step": "title",
-   "data": {
-    "parent": "f_sample_sec",
-    "prompt": 534
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793107561
+  "updated_at": 1793107567
  }
 }
