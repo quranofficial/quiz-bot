@@ -237,8 +237,14 @@
  "inbox": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "1373569356": {
+   "flow": "usrsearch",
+   "step": "q",
+   "data": {}
+  }
+ },
  "meta": {
-  "updated_at": 1793109988
+  "updated_at": 1793110925
  }
 }
