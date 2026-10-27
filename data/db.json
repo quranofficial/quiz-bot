@@ -227,8 +227,17 @@
     "q0f93726b",
     "q090342db"
    ],
-   "idx": 0,
-   "answers": [],
+   "idx": 1,
+   "answers": [
+    {
+     "qid": "q0f93726b",
+     "correct": true,
+     "qtext": "ژمارەی ئێسکەکان: جەستەی مرۆڤێکی پێگەیشتوو لە ___ ئێسکی جیاواز پێکدێت.",
+     "chosen": "C) C. ٢٠٦",
+     "right": "C) C. ٢٠٦",
+     "has_image": true
+    }
+   ],
    "ts": 1793109924.4284537,
    "src": "section",
    "event_id": null,
@@ -238,6 +247,6 @@
  },
  "wizard": {},
  "meta": {
-  "updated_at": 1793109924
+  "updated_at": 1793109932
  }
 }
