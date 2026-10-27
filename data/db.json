@@ -240,18 +240,48 @@
  "wizard": {
   "1373569356": {
    "flow": "impfile",
-   "step": "file",
+   "step": "confirm",
    "data": {
     "path": [
      "f_sample_sec",
      "f8aa9a49a"
     ],
     "folder_id": "f8aa9a49a",
-    "folder_title": "کەرتی سێیەم"
+    "folder_title": "کەرتی سێیەم",
+    "questions": [
+     {
+      "text": "کام له مانهBinal) 5 © © ©0 5",
+      "options": [
+       {
+        "text": "زؤربدی کیسکدکان راستهوخؤ به شیوه‌یSaid ره‌ق دروست بوون ل 9 و",
+        "correct": false
+       },
+       {
+        "text": "هه‌ندیک له ئیسکه‌کان به کرداری دروستبوونیhh’ تییه‌ریون ت",
+        "correct": false
+       }
+      ],
+      "answered": false
+     },
+     {
+      "text": "جیاوازی نیوانgay Sul وSuid ئیسفه‌نجی نه‌وهیه کهSud بتهوWS 5 = - /مؤخی زدردیSui تیدایه 8 .مؤخی سووریSud تیدایه | © ©© 5 C)",
+      "options": [
+       {
+        "text": "جؤکدی هافهرسی تیدایهA+",
+        "correct": false
+       },
+       {
+        "text": "-)هه‌ردووکیان راستن",
+        "correct": false
+       }
+      ],
+      "answered": false
+     }
+    ]
    }
   }
  },
  "meta": {
-  "updated_at": 1793110966
+  "updated_at": 1793110999
  }
 }
