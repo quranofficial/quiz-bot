@@ -23,20 +23,22 @@ def _storage(context) -> st.Storage:
 
 # ---------------- یارمەتیدەرە گشتییەکان ----------------
 
-async def edit_message(query, text, kb=None):
-    """دەستکاری پەیامی دوگمەکە دەکات؛ ئەگەر نەکرا، پەیامی نوێ دەنێرێت."""
+async def edit_message(query, text, kb=None, html: bool = False):
+    """دەستکاری پەیامی دوگمەکە دەکات؛ ئەگەر نەکرا، پەیامی نوێ دەنێرێت.
+    html=True → دەقەکە بە HTML دەنێردرێت (بۆ <code> و <b> وەرگرتن)."""
+    pm = "HTML" if html else None
     try:
-        await query.edit_message_text(text, reply_markup=kb)
+        await query.edit_message_text(text, reply_markup=kb, parse_mode=pm)
     except BadRequest as e:
         if "not modified" in str(e).lower():
             return
         try:
-            await query.message.reply_text(text, reply_markup=kb)
+            await query.message.reply_text(text, reply_markup=kb, parse_mode=pm)
         except Exception:
             pass
     except Exception:
         try:
-            await query.message.reply_text(text, reply_markup=kb)
+            await query.message.reply_text(text, reply_markup=kb, parse_mode=pm)
         except Exception:
             pass
 
@@ -140,6 +142,15 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     if update.effective_chat:
         storage.clear_wizard(update.effective_chat.id)
+    # ---------- خاوەن/ئادمین: هەرگیز وەک بەکارهێنەر تۆمار نەکرێت ----------
+    # تەنها جاری یەکەم ناوەکەیان هەڵدەگیرێت (بۆ ئەوەی لە وەڵامدانەوەدا دیار بێت)،
+    # لە بەشی بەکارهێنەراندا نایانن — لە بەشی ئادمین دایانن، و مینیوی سەرەکی ڕاستەوخۆ دەکرێتەوە.
+    if storage.is_admin(user.id):
+        profile = storage.register_owner_or_admin(user)
+        kb = _main_menu(storage, user)
+        await msg.reply_text(T.START.format(name=profile.get("name") or user.first_name or ""),
+                             reply_markup=kb)
+        return
     # تۆمارکردنی یەکەم جار: ناو + قوتابی مامۆستا
     if not storage.get_user(user.id):
         storage.save_user(user.id, {
@@ -187,6 +198,12 @@ async def cb_home(query, context):
     storage.clear_wizard(chat_id)
     if storage.get_session(uid):
         storage.del_session(uid)
+    # ئادمین/خاوەن: بێ تۆمارکردن — ڕاستەوخۆ مینیو
+    if not storage.get_user(uid) and storage.is_admin(uid):
+        profile = storage.register_owner_or_admin(query.from_user)
+        return await edit_message(query,
+                                  T.START.format(name=profile.get("name") or ""),
+                                  _main_menu(storage, query.from_user))
     profile = storage.get_user(uid)
     if not profile:
         storage.set_wizard(chat_id, {"flow": "reg", "step": "name", "data": {}})
@@ -726,7 +743,7 @@ async def cb_fc(query, context, data: str):
         return await edit_message(query, T.FC_TITLE.format(n=st.knum(n)), K.fc_menu(n))
 
     if data == "fc:add":
-        if not storage.get_user(uid):
+        if not storage.get_user(uid) and not storage.is_admin(uid):
             return await alert(query, T.HINT_START, K.home_only())
         storage.set_wizard(chat_id, {"flow": "fcadd", "step": "front", "data": {}})
         try:
@@ -1059,8 +1076,8 @@ async def cb_ask(query, context, data: str):
     uid = query.from_user.id
 
     if data == "ask":
-        # دەستپێکردن — پێشتر تۆمارکراوە؟
-        if not storage.get_user(uid):
+        # دەستپێکردن — پێشتر تۆمارکراوە؟ (ئادمین پێویستی بە تۆمارکردن نییە)
+        if not storage.get_user(uid) and not storage.is_admin(uid):
             storage.set_wizard(chat, {"flow": "reg", "step": "name",
                                       "data": {"next": "ask"}})
             return await edit_message(query, T.REG_NAME, None)

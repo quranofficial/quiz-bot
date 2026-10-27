@@ -17,11 +17,14 @@ import config
 import fmtutil as fmt
 import handlers_user
 import keyboards as K
-import pdfimport
 import storage as st
 import texts as T
 
 log = logging.getLogger("admin")
+
+# سنوورەکانی هێنانی JSON
+JSON_MAX_BYTES = 15 * 1024 * 1024   # ١٥ مێگابایت
+JSON_MAX_QUESTIONS = 150
 
 
 def _storage(context) -> st.Storage:
@@ -270,7 +273,9 @@ async def cb_admins(query, context):
     admins = storage.db()["admins"]
     lines = []
     if config.OWNER_ID is not None:
-        lines.append(T.ADMIN_ROW_OWNER.format(uid=config.OWNER_ID))
+        u = storage.get_user(config.OWNER_ID) or {}
+        name = st.trunc(u.get("name") or T.ADMIN_NAME_UNKNOWN, 26)
+        lines.append(T.ADMIN_ROW_OWNER.format(name=name, uid=config.OWNER_ID))
     others = [a for a in admins if a != config.OWNER_ID]
     if others:
         for a in others:
@@ -1042,7 +1047,7 @@ async def _finish_ticket_reply(update, context, w: dict, data: dict):
         await msg.reply_text(T.TK_USER_GONE)
 
 
-# ---------------- هێنانی پرسیار بە PDF/وێنە ----------------
+# ---------------- هێنانی پرسیار بە JSON ----------------
 
 async def cb_impfile(query, context):
     """دەستپێکردنی هێنان: سەرەتا بەش و کەرتەکە هەڵبژێرە کە پرسیارەکانی بۆ زیاد دەکرێت."""
@@ -1088,7 +1093,16 @@ async def cb_impf(query, context, data: str):
         d["folder_title"] = folder.get("title", "?")
         w["step"] = "file"
         storage.set_wizard(chat, w)
-        return await handlers_user.edit_message(query, T.IMP2_SEND, K.wiz_cancel_kb())
+        # نیشاندانی نموونەی JSON + ناردنی فایلی نموونە — بۆ ئەوەی بەکارهێنەر بزانێت
+        # جەمسەرەکە چۆن دەبێت
+        try:
+            await context.bot.send_document(
+                chat, _json_sample_bytes(), filename="sample_questions.json",
+                caption=T.IMP2_SAMPLE_FILE)
+        except Exception as e:
+            log.warning("ناردنی نموونەی JSON: %s", e)
+        return await handlers_user.edit_message(query, T.IMP2_SEND, K.imp_json_kb(),
+                                                html=True)
 
     if data.startswith("impf:go:"):
         fid = data[8:]
@@ -1116,49 +1130,165 @@ async def _imp_render_folder(query, context, w):
                            T.A_QN_BTN_PICK_THIS))
 
 
+async def cb_imp_sample(query, context):
+    """ناردنەوەی فایلی نموونەی JSON."""
+    storage = _storage(context)
+    chat = query.message.chat_id
+    w = storage.get_wizard(chat)
+    if not w or w.get("flow") != "impfile":
+        return await handlers_user.alert(query, T.WIZ_GONE, K.back_to_panel_kb())
+    try:
+        await context.bot.send_document(
+            chat, _json_sample_bytes(), filename="sample_questions.json",
+            caption=T.IMP2_SAMPLE_FILE)
+    except Exception as e:
+        log.warning("ناردنی نموونەی JSON: %s", e)
+    await handlers_user.alert(query, T.IMP2_SAMPLE_SENT)
+
+
+def _json_sample_bytes() -> bytes:
+    """ناوەڕۆکی فایلی نموونەی JSON — بە هەمان شێوازێک کە بەکارهێنەر حەزی لێیە."""
+    sample = [
+        {"id": 31,
+         "question": "جوڵاندنی ئێسک بە کام کۆئەندام دەبێت؟",
+         "A": "هەناسە",
+         "B": "هەرس",
+         "C": "سوڕان",
+         "D": "ماسولکە",
+         "answer": "C"},
+        {"id": 32,
+         "question": "گەورەترین ئەندامی لەش مرۆڤ کامەیە؟",
+         "A": "جگەر",
+         "B": "دەم",
+         "C": "گورچیلە",
+         "D": "دڵ",
+         "answer": "A"},
+        {"id": 33,
+         "question": "پرسیاری نموونە بێ وەڵام — وەڵامەکە دواتر بە دەست دیاری بکە",
+         "A": "بژاردەی یەکەم",
+         "B": "بژاردەی دووەم",
+         "C": "بژاردەی سێیەم",
+         "D": "بژاردەی چوارەم"},
+    ]
+    import json as _json
+    return _json.dumps(sample, ensure_ascii=False, indent=2).encode("utf-8")
+
+
+def _json_to_questions(data) -> list:
+    """گۆڕینی JSON ی خوێندراو بۆ لیستی پرسیار لە هەمان شێوەی pdfimport دا:
+    {"text", "options": [{"text", "correct"}], "answered"}
+    شێوازەکە: [{"id", "question", "A", "B", "C", "D", "answer"}]
+    • بە تەنها ئۆبجێکت یان {"questions": [...]} یان لیست قبوڵ دەکات
+    • answer: "A"-"D" یان دەقی تەواوی بژاردەکە؛ ئەگەر نەبوو → بێ وەڵام (پێداچوونەوەی دەستی)"""
+    items = data
+    if isinstance(items, dict):
+        if isinstance(items.get("questions"), list):
+            items = items["questions"]
+        else:
+            items = [items]
+    if not isinstance(items, list):
+        return []
+
+    out = []
+    for it in items[:JSON_MAX_QUESTIONS]:
+        if not isinstance(it, dict):
+            continue
+        qtext = str(it.get("question") or it.get("q") or it.get("text") or "").strip()
+        if not qtext:
+            continue
+        opts = []
+        for L in "ABCD":
+            val = it.get(L)
+            if val is None:
+                val = it.get(L.lower())
+            if val is None and L == "A":
+                val = it.get("option_a") or it.get("option_A")
+            if val is None and L == "B":
+                val = it.get("option_b") or it.get("option_B")
+            if val is None and L == "C":
+                val = it.get("option_c") or it.get("option_C")
+            if val is None and L == "D":
+                val = it.get("option_d") or it.get("option_D")
+            o = str(val).strip() if val is not None else ""
+            if o:
+                opts.append(o[:300])
+        if len(opts) < 2:
+            continue
+        options = [{"text": o, "correct": False} for o in opts]
+        answered = False
+        ans = it.get("answer")
+        if ans is None:
+            ans = it.get("correct") or it.get("key") or it.get("وەڵام")
+        if ans is not None:
+            s = str(ans).strip()
+            idx = None
+            if s:
+                up = s.upper()
+                first = up[0]
+                if first in "ABCD":
+                    cand = "ABCD".index(first)
+                    # ژمارەی بژاردەکان لەبەرچاو بگرە — "D" بە تەنها کاتێک دروستە کە بژاردەی D هەبێت
+                    if cand < len(options):
+                        idx = cand
+                if idx is None:
+                    # گەڕان بە دەقی تەواوی بژاردەکە
+                    for i, o in enumerate(options):
+                        if o["text"].strip() == s:
+                            idx = i
+                            break
+            if idx is not None:
+                options[idx]["correct"] = True
+                answered = True
+        out.append({"text": qtext[:3500], "options": options, "answered": answered})
+    return out
+
+
 async def _route_impfile(update, context, w, data, msg):
-    """هەنگاوی ناردنی فایل: PDF (Document) یان وێنە (Photo یان Document ی وێنە)."""
+    """هەنگاوی ناردنی فایل: JSON (Document) یان پەیامی تێکست کە بە [ یان { دەست پێبکات."""
     storage = _storage(context)
     chat = msg.chat_id
-    doc, photo = msg.document, msg.photo
-    if not doc and not photo:
-        return await msg.reply_text(T.IMP2_BAD_FILE)
+    doc, text = msg.document, (msg.text or msg.caption or "")
 
-    is_pdf = bool(doc and (doc.mime_type or "").endswith("pdf"))
-    if doc and not is_pdf and not (doc.mime_type or "").startswith("image/"):
-        return await msg.reply_text(T.IMP2_BAD_FILE)
-    if doc and (doc.file_size or 0) > pdfimport.MAX_FILE_BYTES:
-        return await msg.reply_text(T.IMP2_TOO_BIG)
-
-    await msg.reply_text(T.IMP2_PARSING)
-    ext = ".pdf" if is_pdf else ".img"
-    path = os.path.join(config.DATA_DIR, "imp_{}{}".format(chat, ext))
-    try:
-        tg_file = await (doc or photo[-1]).get_file()
-        await tg_file.download_to_drive(path)
-    except Exception as e:
-        log.warning("داگرتنی فایلی هێنان: %s", e)
-        return await msg.reply_text(T.IMP2_BAD_FILE)
-
-    try:
-        if is_pdf:
-            raw = pdfimport.pdf_text(path)
-        else:
-            raw = pdfimport.image_text(path)
-    except pdfimport.ImportError_ as e:
-        return await msg.reply_text(T.IMP2_READ_ERR.format(err=str(e)))
-    except Exception as e:
-        log.warning("دەرهێنانی دەق: %s", e)
-        return await msg.reply_text(T.IMP2_READ_ERR.format(err="—"))
-    finally:
+    raw_json = None
+    if doc is not None:
+        name = (doc.file_name or "").lower()
+        mime = doc.mime_type or ""
+        if not (name.endswith((".json", ".txt")) or "json" in mime or mime.startswith("text/")):
+            return await msg.reply_text(T.IMP2_BAD_FILE)
+        if (doc.file_size or 0) > JSON_MAX_BYTES:
+            return await msg.reply_text(T.IMP2_TOO_BIG)
+        await msg.reply_text(T.IMP2_PARSING)
+        import json as _json
+        path = os.path.join(config.DATA_DIR, "imp_{}.json".format(chat))
         try:
-            os.remove(path)
-        except Exception:
-            pass
+            tg_file = await doc.get_file()
+            await tg_file.download_to_drive(path)
+            with open(path, "r", encoding="utf-8-sig", errors="replace") as f:
+                raw_json = f.read()
+        except Exception as e:
+            log.warning("داگرتنی فایلی JSON: %s", e)
+            return await msg.reply_text(T.IMP2_BAD_FILE)
+        finally:
+            try:
+                os.remove(path)
+            except Exception:
+                pass
+    elif text.strip().startswith(("[", "{")):
+        raw_json = text
+    else:
+        return await msg.reply_text(T.IMP2_BAD_FILE)
 
-    questions = pdfimport.parse_questions(raw)
+    import json as _json
+    try:
+        data_json = _json.loads(raw_json)
+    except Exception as e:
+        return await msg.reply_text(
+            T.IMP2_JSON_ERR.format(err=_html.escape(str(e)[:120])),
+            parse_mode="HTML")
+
+    questions = _json_to_questions(data_json)
     if not questions:
-        return await msg.reply_text(T.IMP2_NONE)
+        return await msg.reply_text(T.IMP2_NONE, parse_mode="HTML")
 
     d = w.setdefault("data", {})
     d["questions"] = questions

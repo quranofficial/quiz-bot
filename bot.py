@@ -68,22 +68,8 @@ async def _post_init(app: Application) -> None:
         import handlers_admin
         for aid in storage.all_admin_ids():
             await handlers_admin.ensure_admin_commands(app.bot, aid)
-    # گەرمکردنەوەی OCR ی کوردی سۆرانی — kur_ara.traineddata لە پاش-پلاست دادەگیرێت
-    # (جارێک بۆ هەر دانیشتێک؛ یەکەم هێنان بەم هۆیە خێرا دەبێت)
-    import threading
-    threading.Thread(target=_warm_kur_ara, daemon=True).start()
-    log.info("بۆت ئامادەیە ✅ (protect_content=ON بۆ بەکارهێنەران / OFF بۆ ئادمین, "
+    log.info("بۆت ئامادەیە ✅ (protect_content=ON بۆ بەکارهێنەران / OFF بۆ ئادمین و خاوەن, "
              "concurrent_updates=ON)")
-
-
-def _warm_kur_ara() -> None:
-    """دایەزراندنی پاش-پلاستی kur_ara بۆ OCR — هیچ شتێک ناشکێنێت ئەگەر سەرکەوتوو نەبێت."""
-    try:
-        import pdfimport
-        ok = pdfimport._ensure_kur_ara()
-        log.info("kur_ara OCR ئامادە: %s", ok)
-    except Exception as e:
-        log.warning("kur_ara warm-up: %s", e)
 
 
 async def _error(update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -103,19 +89,25 @@ async def _error(update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 # ---------------- پاراستنی ناوەڕۆک: تەنها ئادمین forward/save/copy بکات ----------------
 
-# ئەو ڕێگاکانی Bot کە پەیام دەنێرن — هەموویان protect_content یان هەیە
-_PROTECT_METHODS = ("send_message", "send_photo", "send_document", "send_video",
-                    "send_animation", "send_audio", "send_voice", "send_video_note",
-                    "send_sticker", "send_media_group", "send_poll", "send_location",
-                    "send_contact", "send_venue", "send_invoice", "send_game",
-                    "send_dice", "copy_message")
+# خاڵەکانی API ی ناردنی ناوەڕۆک — protect_content یان هەیە (ناوی endpoint بە camelCase)
+_PROTECT_ENDPOINTS = ("sendmessage", "sendphoto", "senddocument", "sendvideo",
+                      "sendanimation", "sendaudio", "sendvoice", "sendvideonote",
+                      "sendsticker", "sendmediagroup", "sendpoll", "sendlocation",
+                      "sendvenue", "sendcontact", "sendinvoice", "sendgame",
+                      "senddice", "copymessage", "forwardmessage", "sendpaidmedia")
 
 
 def exempt_admin_sends(app: Application, storage: Storage) -> None:
-    """Defaults(protect_content=True) بۆ هەموو پەیامەکان کار دەکات؛
-    لێرەدا هەموو ڕێگاکانی ناردن دادەپۆشرێن بۆ ئەوەی کاتێک ئامانجی پەیامەکە
-    چاتی ئادمینێک بێت، پەیامەکە بە protect_content=False بێت — بۆیە تەنها
-    ئادمین دەتوانێت forward/save/copy بکات و بەکارهێنەرانی ئاسایی ناتوانن."""
+    """قفڵی ناوەڕۆک بە دوو ئاست کار دەکات، بە جۆرێک کە هەمیشە بێ شکست بێت:
+
+    • بەکارهێنەری ئاسایی: Defaults(protect_content=True) هەموو پەیامەکان دەقفڵێنێت
+      (forward/save/copy/screenshot lock).
+    • خاوەن و ئادمین: لە خاڵی کۆتایی ناردندا (Bot._do_post — دوای ئەوەی Defaults
+      جێبەجێ کراوە) protect_content لادەبرێت — بۆیە ئادمین ئازادە پەیامەکانی
+      بۆتەکە forward/save/copy بکات، بێ گوێپێبستن لە ڕێگەی ناردنەکە.
+
+    _do_post دەرگا کۆتاییەکەیە کە هەموو پەیامێک بەناودا تێدەپەڕێت — ئەگەر هەر
+    ڕێگەیەکی ناردن لە پێشدا تێپەڕ بێت یان patch نەبێت، ئەمە هەمووی دەگرێتەوە."""
     bot_cls = type(app.bot)
 
     def _to_int(chat_id):
@@ -124,21 +116,24 @@ def exempt_admin_sends(app: Application, storage: Storage) -> None:
         except (TypeError, ValueError):
             return None
 
-    for name in _PROTECT_METHODS:
-        orig = getattr(bot_cls, name, None)
-        if orig is None:
-            continue
+    orig_do_post = bot_cls._do_post
 
-        def _make(orig):
-            async def wrapper(self, chat_id, *args, **kwargs):
-                cid = _to_int(chat_id)
-                if (cid is not None and kwargs.get("protect_content") is None
-                        and storage.is_admin(cid)):
-                    kwargs["protect_content"] = False
-                return await orig(self, chat_id, *args, **kwargs)
-            return wrapper
+    async def _do_post(self, endpoint, data, **kwargs):
+        try:
+            if isinstance(data, dict) and endpoint.lower().replace("_", "") in _PROTECT_ENDPOINTS:
+                cid = _to_int(data.get("chat_id"))
+                if cid is not None and storage.is_admin(cid):
+                    # ئادمین/خاوەن — هەرگیز قفڵ نەکرێت: forward/save/copy بۆ ئازادە
+                    if data.pop("protect_content", None) is not False:
+                        log.debug("protect_content لابرا بۆ ئادمین %s (%s)", cid, endpoint)
+                elif cid is not None and "protect_content" not in data:
+                    # بەکارهێنەری ئاسایی — زامنی قفڵ (پاشەکەوتی Defaults)
+                    data["protect_content"] = True
+        except Exception:
+            pass
+        return await orig_do_post(self, endpoint, data, **kwargs)
 
-        setattr(bot_cls, name, _make(orig))
+    bot_cls._do_post = _do_post
 
 
 # ---------------- خشتەی تاقیکردنەوەی شەوانە ----------------
@@ -281,6 +276,8 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return await handlers_admin.cb_impok(q, context)
         if data.startswith("impf:"):
             return await handlers_admin.cb_impf(q, context, data)
+        if data.startswith("impx:"):
+            return await handlers_admin.cb_imp_sample(q, context)
         if data == "pendq":
             return await handlers_admin.cb_pending(q, context)
         if data.startswith("pqset:") or data in ("pqskip", "pqdone"):

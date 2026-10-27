@@ -141,6 +141,51 @@ class Storage:
         self.on_change = None  # لەلایەن bot.py ڕێکدەخرێت → gitsync.notify
         self._lock = threading.RLock()
         self._db = self._load()
+        # خاوەن و ئادمینەکان لە لیستی بەکارهێنەراندا نایانن — تەنها وەک ستاف
+        self._mark_staff_all()
+
+    def _mark_staff_all(self):
+        """هەموو ئادمین و خاوەنێک کە لە users دایە — نیشانەی staff دەخەینە سەری.
+        بەم جۆرە لە لیست و ژمارەی بەکارهێنەراندا پیشان نادرێت، بەڵام تایبەتمەندییەکانی
+        بەکارهێنەری (فڵاشکارت، تیکت، نامە) بۆ کاردەکن."""
+        changed = False
+        for uid in self.all_admin_ids():
+            u = self._db["users"].get(str(uid))
+            if u and not u.get("staff"):
+                u["staff"] = True
+                changed = True
+        if changed:
+            self.save()
+
+    # ---- ستاف (خاوەن + ئادمین) ----
+
+    def is_staff(self, uid) -> bool:
+        """ئایا ئەم UID ە ستافە (خاوەن یان ئادمین)؟ ئەوان لە لیستی بەکارهێنەران نایانن."""
+        if self.is_admin(uid):
+            return True
+        u = self.get_user(uid)
+        return bool(u and u.get("staff"))
+
+    def register_owner_or_admin(self, user) -> dict:
+        """خاوەن/ئادمین تەنها جارێک بە ناوەوە تۆمار دەکرێت — ویزاردی تۆمارکردن بۆ نییە.
+        • خاوەن: ناوەکەی تەنها جاری یەکەم هەڵدەگیرێت (دواتر ناگۆڕدرێت) —
+          بۆ ئەوەی کاتێک وەڵامی بەکارهێنەر دەداتەوە ناوەکەی دیار بێت.
+        • ئادمین: ئەگەر پرۆفایلی نییە، دروست دەکرێت؛ ئەگەری هەیە، دەمێنێتەوە."""
+        uid = user.id
+        p = self.get_user(uid)
+        if p is None:
+            return self.save_user(uid, {
+                "name": (user.first_name or "ئادمین")[:40],
+                "teacher": None,
+                "username": ("@" + user.username) if user.username else "",
+                "joined": int(time.time()),
+            })
+        # پرۆفایلی هەیە — تەنها staff چالاک بکە و یوزەرنام نوێ بکەرەوە؛ ناو دەگۆڕدرێت
+        p["staff"] = True
+        if user.username:
+            p["username"] = "@" + user.username
+        self.save()
+        return p
 
     # ---- خوێندنەوە و نووسین ----
 
@@ -414,16 +459,17 @@ class Storage:
 
     def save_user(self, uid, profile: dict) -> dict:
         profile["uid"] = int(uid) if str(uid).isdigit() else uid
+        # ئادمین/خاوەن هەرگیز وەک بەکارهێنەری ئاسایی تۆمار نەکرێت — هەمیشە ستافە
+        if self.is_admin(uid):
+            profile["staff"] = True
         self._db["users"][str(uid)] = profile
         self.save()
         return profile
 
     def count_users(self, exclude_admins: bool = False) -> int:
-        """کۆی بەکارهێنەران — ئەگەر exclude_admins بێت، ئادمینەکان نایژمێردرێن."""
-        if not exclude_admins:
-            return len(self._db["users"])
-        return sum(1 for u in self._db["users"].values()
-                   if not self.is_admin(u.get("uid")))
+        """کۆی بەکارهێنەرانی ئاسایی — ستاف (خاوەن + ئادمین) هەرگیز نایژمێردرێت،
+        بۆیە ژمارەکە لە هەموو شوێنێکدا (پانێڵ، لیست، ئامار، نامەی گشتی) یەکسانە."""
+        return sum(1 for u in self._db["users"].values() if not u.get("staff"))
 
     # ---- باندکردن و سڕینەوەی هەژمار (لای ئادمین) ----
 
@@ -473,9 +519,11 @@ class Storage:
         return True
 
     def count_teacher_users(self) -> Tuple[int, int]:
-        """(قوتابیەکان، ئەوانی تر) — لە وەڵامی پرسیاری تۆمارکردنەوە."""
+        """(قوتابیەکان، ئەوانی تر) — ستاف نایژمێردرێت."""
         students = others = 0
         for u in self._db["users"].values():
+            if u.get("staff"):
+                continue
             if u.get("teacher") is True:
                 students += 1
             else:
@@ -707,13 +755,15 @@ class Storage:
         self.save()
 
     def find_users(self, query: str) -> List[dict]:
-        """گەڕان بە ناو، یوزەرنام یان ID — گەڕانەوەی لیستی هاوتاکان."""
+        """گەڕان بە ناو، یوزەرنام یان ID — ستاف پیشان نادرێت."""
         q = (query or "").strip().lower()
         if not q:
             return []
         q2 = q.translate(_WESTERN_TABLE)
         out = []
         for u in self._db["users"].values():
+            if u.get("staff"):
+                continue
             hay = " ".join([
                 str(u.get("name") or ""), str(u.get("username") or ""),
                 str(u.get("uid") or ""),
@@ -724,8 +774,9 @@ class Storage:
         return out
 
     def users_sorted(self) -> List[dict]:
-        """هەموو بەکارهێنەران بە دوایین چالاکی (یان بەیەکەوەبوون)."""
-        out = list(self._db["users"].values())
+        """هەموو بەکارهێنەرانی ئاسایی (بێ ستاف) بە دوایین چالاکی — لیست و نامەی گشتی.
+        ستاف (خاوەن + ئادمین) لە بەشی بەکارهێنەراندا پیشان نادرێت."""
+        out = [u for u in self._db["users"].values() if not u.get("staff")]
         out.sort(key=lambda u: max((u.get("stats") or {}).get("last_quiz_at") or 0,
                                    u.get("joined") or 0), reverse=True)
         return out

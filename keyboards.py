@@ -715,6 +715,14 @@ def imp_confirm_kb() -> InlineKeyboardMarkup:
     ])
 
 
+def imp_json_kb() -> InlineKeyboardMarkup:
+    """کلیلەکانی هەنگاوی ناردنی فایلی JSON — نموونە + هەڵوەشاندنەوە."""
+    return InlineKeyboardMarkup([
+        [btn("📄 نموونەی JSON", "impx:sample")],
+        [btn(T.WIZ_BTN_STOP, "wx:cancel")],
+    ])
+
+
 def pq_review_kb(options) -> InlineKeyboardMarkup:
     """دوگمەکانی دیاریکردنی وەڵامی ڕاست بۆ پرسیاری بێ وەڵام."""
     rows = []
