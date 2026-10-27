@@ -141,13 +141,17 @@
    "username": "@ismahil_312",
    "joined": 1793046229,
    "stats": {
-    "quizzes": 1,
-    "total": 1,
-    "correct": 1,
-    "last_quiz_at": 1793046528,
+    "quizzes": 2,
+    "total": 3,
+    "correct": 2,
+    "last_quiz_at": 1793111138,
     "by_folder": {
      "کەرتی یەکەم": {
       "q": 1,
+      "c": 1
+     },
+     "تاقیکردنەوەی گشتی": {
+      "q": 2,
       "c": 1
      }
     }
@@ -162,10 +166,11 @@
    ],
    "last_quiz": {
     "qids": [
-     "q0f93726b"
+     "q0f93726b",
+     "q090342db"
     ],
-    "title": "کەرتی یەکەم",
-    "ts": 1793046528
+    "title": "تاقیکردنەوەی گشتی",
+    "ts": 1793111138
    },
    "uid": 1373569356
   },
@@ -230,26 +235,9 @@
  "reports": {},
  "inbox": {},
  "events": {},
- "sessions": {
-  "1373569356": {
-   "uid": 1373569356,
-   "folder_id": "root",
-   "folder_title": "تاقیکردنەوەی گشتی",
-   "qids": [
-    "q0f93726b",
-    "q090342db"
-   ],
-   "idx": 0,
-   "answers": [],
-   "ts": 1793111134.1880999,
-   "src": "section",
-   "event_id": null,
-   "date": null,
-   "extra": {}
-  }
- },
+ "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793111134
+  "updated_at": 1793111138
  }
 }
