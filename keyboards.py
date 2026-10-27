@@ -18,22 +18,51 @@ def _flat(kb: InlineKeyboardMarkup):
 
 # ---------------- لای بەکارهێنەر ----------------
 
-def main_menu(is_admin: bool, has_pages: bool, has_tree: bool = True,
-              has_event: bool = False) -> InlineKeyboardMarkup:
+# کلیلەکانی دوگمەکانی مینیوی سەرەکی — ناوەکان لە ڕێکخستنەکاندا دەگۆڕدرێن
+MENU_KEYS = ("sections", "custom", "event", "ask", "flash",
+             "myq", "myrp", "myinbox", "mystats", "pages")
+
+
+def menu_label(storage, key: str) -> str:
+    """ناوی ئێستای دوگمەیەکی مینیو — ئەگەر ئادمین ناوی گۆڕیبێت، ئەوە دەگەڕێنێتەوە."""
+    stored = storage.menu_label(key)
+    if stored:
+        return stored
+    defaults = {
+        "sections": T.BTN_SECTIONS, "custom": T.BTN_CUSTOM_QUIZ,
+        "event": T.BTN_EVENT, "ask": T.BTN_ASK, "flash": T.BTN_FLASH,
+        "myq": T.BTN_MYQ, "myrp": T.BTN_MYRP, "myinbox": T.BTN_MYINBOX,
+        "mystats": T.BTN_MYSTATS, "pages": T.BTN_PAGES,
+    }
+    return defaults.get(key, key)
+
+
+def main_menu(storage, user) -> InlineKeyboardMarkup:
+    db = storage.db()
+    ev = storage.get_event()
+    has_event = bool(ev and ev.get("enabled"))
+    has_tree = bool(db["tree"])
+    has_pages = bool(db["pages"])
+    L = lambda k: menu_label(storage, k)
     rows = []
     if has_tree:
-        rows.append([btn(T.BTN_SECTIONS, "nav:root")])
-        rows.append([btn(T.BTN_CUSTOM_QUIZ, "mq")])
+        rows.append([btn(L("sections"), "nav:root")])
+        rows.append([btn(L("custom"), "mq")])
     if has_event:
-        rows.append([btn(T.BTN_EVENT, "qn")])
+        rows.append([btn(L("event"), "qn")])
     if has_tree:
-        rows.append([btn(T.BTN_ASK, "ask"), btn(T.BTN_FLASH, "fc")])
-    else:
-        rows.append([btn(T.BTN_FLASH, "fc")])
-    rows.append([btn(T.BTN_MYSTATS, "mystats")])
+        rows.append([btn(L("ask"), "ask")])
+    rows.append([btn(L("flash"), "fc")])
+    rows.append([btn(L("myq"), "myq"), btn(L("myrp"), "myrp")])
+    rows.append([btn(L("myinbox"), "myinbox"), btn(L("mystats"), "mystats")])
     if has_pages:
-        rows.append([btn(T.BTN_PAGES, "pgs")])
-    if is_admin:
+        rows.append([btn(L("pages"), "pgs")])
+    # بەشە زیادکراوەکانی مینیو — هەر یەکێک پەڕەیەکی زانیاری دەکاتەوە
+    page_ids = {p.get("id") for p in db["pages"]}
+    for ex in storage.menu_extras():
+        if ex.get("page_id") in page_ids:
+            rows.append([btn(ex.get("label") or "📄", "cx:{}".format(ex["page_id"]))])
+    if storage.is_admin(user.id):
         rows.append([btn(T.BTN_ADMIN, "adm")])
     return InlineKeyboardMarkup(rows)
 
@@ -273,20 +302,23 @@ def tickets_list_kb(tickets) -> InlineKeyboardMarkup:
 # ---------------- پانێڵی ئادمین ----------------
 
 def admin_main(open_tickets: int = 0, open_reports: int = 0,
-               users_n: int = 0) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
+               users_n: int = 0, pending_n: int = 0) -> InlineKeyboardMarkup:
+    rows = [
         [btn(T.A_BTN_TREE, "am:root")],
-        [btn(T.A_BTN_IMPORT, "impjson")],
+        [btn(T.A_BTN_IMPFILE, "impfile")],
         [btn(T.A_BTN_TICKETS.format(n=st.knum(open_tickets)), "admtk"),
          btn(T.A_BTN_REPORTS.format(n=st.knum(open_reports)), "admrp")],
         [btn(T.A_BTN_EVENT, "qnev"),
          btn(T.A_BTN_BCAST, "bcast")],
         [btn(T.A_BTN_USERS.format(n=st.knum(users_n)), "usr"),
          btn(T.A_BTN_PAGES, "admpgs")],
-        [btn(T.A_BTN_ADMINS, "admadm"), btn(T.A_BTN_SETTINGS, "setview")],
-        [btn(T.A_BTN_STATS, "stats")],
-        [btn(T.BTN_HOME, "home")],
-    ])
+        [btn(T.A_BTN_MENU, "menu"), btn(T.A_BTN_ADMINS, "admadm")],
+        [btn(T.A_BTN_SETTINGS, "setview"), btn(T.A_BTN_STATS, "stats")],
+    ]
+    if pending_n:
+        rows.append([btn(T.A_BTN_PENDING.format(n=st.knum(pending_n)), "pendq")])
+    rows.append([btn(T.BTN_HOME, "home")])
+    return InlineKeyboardMarkup(rows)
 
 
 def back_to_panel_kb() -> InlineKeyboardMarkup:
@@ -315,7 +347,9 @@ def admin_folder(folder, parent_id, tree) -> InlineKeyboardMarkup:
             rows.append([btn("📁 " + st.trunc(c.get("title", "?"), 36), "am:{}".format(c["id"]))])
         else:
             label = c.get("text") or T.RESULT_IMG
-            rows.append([btn("❓ " + st.trunc(label, 36), "amq:{}".format(c["id"]))])
+            # ⚠️ = پرسیارێک کە هێشتا وەڵامی ڕاستی نییە
+            mark = "❓" if st.has_correct(c) else "⚠️"
+            rows.append([btn("{} ".format(mark) + st.trunc(label, 36), "amq:{}".format(c["id"]))])
     fid = folder["id"] if folder else "root"
     if folder:
         rows.append([btn(T.A_BTN_ADD_FOLDER, "amnew:{}".format(fid)),
@@ -331,12 +365,37 @@ def admin_folder(folder, parent_id, tree) -> InlineKeyboardMarkup:
 
 
 def admin_question(q, folder_id) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
-        [btn(T.A_BTN_EDIT_TEXT, "amqtext:{}".format(q["id"])),
-         btn(T.A_BTN_EDIT_IMAGE, "amqimg:{}".format(q["id"]))],
-        [btn(T.A_BTN_DELETE, "amqdel:{}".format(q["id"]))],
-        [btn(T.A_BTN_BACK, "am:{}".format(folder_id or "root"))],
-    ])
+    """شاشەی دەستکاری پرسیار: دەق، وێنە، هەموو هەڵبژاردەکان A-D و وەڵامی ڕاست."""
+    qid = q["id"]
+    opts = q.get("options") or []
+    rows = [
+        [btn(T.A_BTN_EDIT_TEXT, "amqtext:{}".format(qid)),
+         btn(T.A_BTN_EDIT_IMAGE, "amqimg:{}".format(qid))],
+    ]
+    for i, o in enumerate(opts):
+        mark = "✅" if o.get("correct") else "✏️"
+        rows.append([btn("{} {}) {}".format(mark, st.LETTERS[i],
+                                            st.trunc(o.get("text", ""), 32)),
+                         "amqopt:{}:{}".format(qid, i))])
+    corr = next((st.LETTERS[i] for i, o in enumerate(opts) if o.get("correct")), None)
+    rows.append([btn(T.A_BTN_CORRECT.format(letter=corr or T.CORRECT_NONE),
+                     "amqcorrp:{}".format(qid))])
+    rows.append([btn(T.A_BTN_DELETE, "amqdel:{}".format(qid))])
+    rows.append([btn(T.A_BTN_BACK, "am:{}".format(folder_id or "root"))])
+    return InlineKeyboardMarkup(rows)
+
+
+def correct_pick_kb(q) -> InlineKeyboardMarkup:
+    """هەڵبژاردنی وەڵامی ڕاست لە دەستکاریکردنی پرسیاردا."""
+    qid = q["id"]
+    rows = []
+    for i, o in enumerate(q.get("options") or []):
+        mark = "✅" if o.get("correct") else "▫️"
+        rows.append([btn("{} {}) {}".format(mark, st.LETTERS[i],
+                                            st.trunc(o.get("text", ""), 40)),
+                         "amqcorrset:{}:{}".format(qid, i))])
+    rows.append([btn(T.A_BTN_BACK_Q, "amq:{}".format(qid))])
+    return InlineKeyboardMarkup(rows)
 
 
 def admin_pages(pages) -> InlineKeyboardMarkup:
@@ -486,18 +545,25 @@ def qn_view_kb(enabled: bool) -> InlineKeyboardMarkup:
 
 def qn_folder_kb(children, depth: int, fid=None) -> InlineKeyboardMarkup:
     """ڕاوکردنی بەش بۆ سەرچاوەی پرسیارەکانی تاقیکردنەوەی شەوانە."""
+    return folder_picker_kb(children, depth, "qnf:", "qn:cancelwiz",
+                            T.A_QN_BTN_PICK_THIS)
+
+
+def folder_picker_kb(children, depth: int, prefix: str, cancel_cb: str,
+                     pick_label: str = None) -> InlineKeyboardMarkup:
+    """ڕاوکردنی گشتی بەش/کەرت — prefix دیاری دەکات چ فلۆوێک (نموونە: impf:)"""
     rows = []
     for c in children:
         if c.get("type") == "folder":
             rows.append([btn("📁 " + st.trunc(c.get("title", "?"), 44),
-                             "qnf:go:{}".format(c["id"]))])
+                             "{}go:{}".format(prefix, c["id"]))])
     nav = []
     if depth > 0:
-        nav.append(btn(T.A_QN_BTN_PICK_THIS, "qnf:ok"))
-        nav.append(btn(T.BTN_ASK_BACK, "qnf:back"))
+        nav.append(btn(pick_label or T.A_QN_BTN_PICK_THIS, "{}ok".format(prefix)))
+        nav.append(btn(T.BTN_ASK_BACK, "{}back".format(prefix)))
     if nav:
         rows.append(nav)
-    rows.append([btn(T.WIZ_BTN_STOP, "qn:cancelwiz")])
+    rows.append([btn(T.WIZ_BTN_STOP, cancel_cb)])
     return InlineKeyboardMarkup(rows)
 
 
@@ -580,7 +646,7 @@ def wiz_cancel_kb() -> InlineKeyboardMarkup:
 
 def wiz_options_kb(n: int) -> InlineKeyboardMarkup:
     rows = []
-    if n >= 2:
+    if n >= 4:
         rows.append([btn(T.WIZ_BTN_DONE.format(n=st.knum(n)), "wx:done")])
     rows.append([btn(T.WIZ_BTN_STOP, "wx:cancel")])
     return InlineKeyboardMarkup(rows)
@@ -632,9 +698,90 @@ def after_item_saved_kb(pid) -> InlineKeyboardMarkup:
     ])
 
 
-def after_import_kb() -> InlineKeyboardMarkup:
+def after_import_kb(fid=None) -> InlineKeyboardMarkup:
+    rows = [[btn(T.IMP2_BTN_AGAIN, "impfile")]]
+    if fid:
+        rows.append([btn(T.WIZ_BTN_TO_FOLDER, "am:{}".format(fid))])
+    rows.append([btn(T.BTN_HOME, "home")])
+    return InlineKeyboardMarkup(rows)
+
+
+# --- هێنانی پرسیار بە PDF/وێنە ---
+
+def imp_confirm_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [btn(T.IMP_BTN_AGAIN, "impjson")],
-        [btn(T.A_BTN_TREE, "am:root")],
-        [btn(T.BTN_HOME, "home")],
+        [btn(T.IMP2_BTN_CONFIRM, "impok")],
+        [btn(T.WIZ_BTN_STOP, "wx:cancel")],
     ])
+
+
+def pq_review_kb(options) -> InlineKeyboardMarkup:
+    """دوگمەکانی دیاریکردنی وەڵامی ڕاست بۆ پرسیاری بێ وەڵام."""
+    rows = []
+    for i, o in enumerate(options):
+        rows.append([btn("{}) {}".format(st.LETTERS[i], st.trunc(o.get("text", ""), 50)),
+                         "pqset:{}".format(i))])
+    rows.append([btn(T.PQ_BTN_SKIP, "pqskip"), btn(T.PQ_BTN_DONE, "pqdone")])
+    return InlineKeyboardMarkup(rows)
+
+
+# --- بەڕێوەبردنی مینیوی سەرەکی ---
+
+def menu_admin_kb(storage) -> InlineKeyboardMarkup:
+    rows = []
+    for key in MENU_KEYS:
+        label = menu_label(storage, key)
+        rows.append([btn(T.MENU_LABEL_BTN.format(label=st.trunc(label, 28)),
+                         "menu:{}".format(key))])
+    for ex in storage.menu_extras():
+        rows.append([btn("🗑 " + st.trunc(ex.get("label") or "؟", 28),
+                         "menuexdel:{}".format(ex["id"]))])
+    rows.append([btn(T.MENU_BTN_ADD_EXTRA, "menuex")])
+    rows.append([btn(T.MENU_BTN_RESET, "menureset")])
+    rows.append([btn(T.A_BTN_BACK_PANEL, "adm")])
+    return InlineKeyboardMarkup(rows)
+
+
+def menu_extra_pick_kb(pages) -> InlineKeyboardMarkup:
+    rows = [[btn("📄 " + st.trunc(p.get("title", "?"), 40),
+                 "menuexpick:{}".format(p["id"]))] for p in pages[:25]]
+    rows.append([btn(T.WIZ_BTN_STOP, "wx:cancel")])
+    return InlineKeyboardMarkup(rows)
+
+
+# --- پرسیارەکانم / ڕاپۆرتەکانم / نامە هاتووەکان (لای بەکارهێنەر) ---
+
+def _status_mark(status: str) -> str:
+    return {"open": "🟢", "replied": "🔵", "closed": "🔒"}.get(status, "▫️")
+
+
+def my_tickets_kb(tickets) -> InlineKeyboardMarkup:
+    rows = []
+    for t in tickets[:25]:
+        label = T.MY_ITEM_BTN.format(mark=_status_mark(t.get("status")),
+                                     id=st.knum(t.get("id", 0)),
+                                     text=st.trunc(t.get("text") or "🖼", 30))
+        rows.append([btn(label, "myqv:{}".format(t["id"]))])
+    rows.append([btn(T.BTN_HOME, "home")])
+    return InlineKeyboardMarkup(rows)
+
+
+def my_reports_kb(reports) -> InlineKeyboardMarkup:
+    rows = []
+    for r in reports[:25]:
+        label = T.MY_ITEM_BTN.format(mark=_status_mark(r.get("status")),
+                                     id=st.knum(r.get("id", 0)),
+                                     text=st.trunc(fmt.plain(r.get("qtext") or ""), 30))
+        rows.append([btn(label, "myrpv:{}".format(r["id"]))])
+    rows.append([btn(T.BTN_HOME, "home")])
+    return InlineKeyboardMarkup(rows)
+
+
+def my_inbox_kb(msgs) -> InlineKeyboardMarkup:
+    rows = []
+    for i, m in enumerate(msgs[-25:]):
+        idx = len(msgs) - len(msgs[-25:]) + i   # ئیندێکسی ڕاستەقینە لە لیستەکەدا
+        label = "📨 " + st.trunc(m.get("text") or "🖼", 34)
+        rows.append([btn(label, "myinv:{}".format(idx))])
+    rows.append([btn(T.BTN_HOME, "home")])
+    return InlineKeyboardMarkup(rows)

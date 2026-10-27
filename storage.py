@@ -25,6 +25,7 @@ DEFAULT_DB: Dict[str, Any] = {
     "users": {},                             # پرۆفایلی بەکارهێنەرانی تۆمارکراو
     "tickets": {},                           # پرسیارەکانی بەکارهێنەران (پرسیار بکە)
     "reports": {},                           # ڕاپۆرتەکانی کێشەی پرسیارەکان
+    "inbox": {},                             # نامە هاتووەکانی بەکارهێنەران (لە ئادمین)
     "events": {},                            # تاقیکردنەوەی شەوانە (تاقیکردنەوەی کاتدار)
     "sessions": {},                          # دانیشتە چالاکەکانی تاقیکردنەوە
     "wizard": {},                            # دۆخی ویزاردەکان (ئادمین + بەکارهێنەر)
@@ -57,6 +58,11 @@ def to_int(s) -> Optional[int]:
 def trunc(s: str, n: int = 40) -> str:
     s = (s or "").strip().replace("\n", " ")
     return s if len(s) <= n else s[: max(1, n - 1)] + "…"
+
+
+def has_correct(q: Optional[dict]) -> bool:
+    """ئایا ئەم پرسیارە وەڵامی ڕاستی هەیە؟"""
+    return any((o or {}).get("correct") for o in (q or {}).get("options", []) if o)
 
 
 # ---------------------------------------------------------------------------
@@ -156,7 +162,8 @@ class Storage:
         for key in ("admins", "tree", "pages"):
             if not isinstance(data.get(key), list):
                 data[key] = []
-        for key in ("sessions", "wizard", "users", "tickets", "reports", "events"):
+        for key in ("sessions", "wizard", "users", "tickets", "reports", "events",
+                    "inbox"):
             if not isinstance(data.get(key), dict):
                 data[key] = {}
         if not isinstance(data.get("settings"), dict):
@@ -165,6 +172,10 @@ class Storage:
         data["settings"].setdefault("teacher_name", DEFAULT_TEACHER)
         data["settings"].setdefault("ticket_seq", 0)
         data["settings"].setdefault("report_seq", 0)
+        if not isinstance(data["settings"].get("menu_labels"), dict):
+            data["settings"]["menu_labels"] = {}
+        if not isinstance(data["settings"].get("menu_extra"), list):
+            data["settings"]["menu_extra"] = []
         return data
 
     def db(self) -> Dict[str, Any]:
@@ -269,6 +280,55 @@ class Storage:
         node["image"] = image
         self.save()
         return True
+
+    def set_question_option(self, qid: str, idx: int, text: str) -> bool:
+        """دەقی هەڵبژاردەیەکی پرسیار دەگۆڕێت (idx لە ٠ ەوە)."""
+        node = find_node(self._db["tree"], qid)
+        if not node or node.get("type") != "question":
+            return False
+        options = node.get("options") or []
+        if idx < 0 or idx >= len(options):
+            return False
+        options[idx]["text"] = (text or "").strip()[:200]
+        self.save()
+        return True
+
+    def set_question_correct(self, qid: str, idx: int) -> bool:
+        """وەڵامی ڕاستی پرسیار دیاری دەکات — هەموو ئەوانی تر ناڕاست دەبن."""
+        node = find_node(self._db["tree"], qid)
+        if not node or node.get("type") != "question":
+            return False
+        options = node.get("options") or []
+        if idx < 0 or idx >= len(options):
+            return False
+        for i, o in enumerate(options):
+            o["correct"] = (i == idx)
+        self.save()
+        return True
+
+    # ---- پرسیاری بێ وەڵام ----
+
+    def pending_question_ids(self, limit: int = 200) -> List[str]:
+        """لیستی ID ی پرسیارەکان کە هیچ وەڵامێکی ڕاستیان نییە."""
+        out: List[str] = []
+
+        def walk(nodes):
+            for n in nodes:
+                if n.get("type") == "question":
+                    if not has_correct(n):
+                        out.append(n["id"])
+                        if len(out) >= limit:
+                            return True
+                else:
+                    if walk(n.get("children", [])):
+                        return True
+            return False
+
+        walk(self._db["tree"])
+        return out
+
+    def count_pending_questions(self) -> int:
+        return len(self.pending_question_ids(limit=100000))
 
     # ---- پەڕەکانی زانیاری (کەش) ----
 
@@ -448,6 +508,13 @@ class Storage:
     def count_open_tickets(self) -> int:
         return len(self.open_tickets())
 
+    def user_tickets(self, uid) -> List[dict]:
+        """هەموو پرسیارەکانی یەک بەکارهێنەر — نوێترین لە سەرەوە."""
+        key = str(uid)
+        out = [t for t in self._db["tickets"].values() if str(t.get("uid")) == key]
+        out.sort(key=lambda t: t.get("id", 0), reverse=True)
+        return out
+
     # ---- ڕاپۆرتەکانی کێشە (پرسیاری گومانلێکراو لە کۆتایی تاقیکردنەوە) ----
 
     def next_report_id(self) -> int:
@@ -497,6 +564,72 @@ class Storage:
         if closed:
             self.save()
         return len(closed)
+
+    def user_reports(self, uid) -> List[dict]:
+        """هەموو ڕاپۆرتەکانی یەک بەکارهێنەر — نوێترین لە سەرەوە."""
+        key = str(uid)
+        out = [r for r in self._db["reports"].values() if str(r.get("uid")) == key]
+        out.sort(key=lambda r: r.get("id", 0), reverse=True)
+        return out
+
+    # ---- نامە هاتووەکان (نامەی تایبەتی ئادمین) ----
+
+    def inbox_msgs(self, uid) -> List[dict]:
+        return list(self._db["inbox"].get(str(uid)) or [])
+
+    def add_inbox_msg(self, uid, text: Optional[str], photo: Optional[str],
+                      by_id, by_name: str) -> dict:
+        """نامەیەک بۆ بەکارهێنەر زیاد دەکات (لە نامەی تایبەتی ئادمین)."""
+        key = str(uid)
+        msg = {"id": new_id("m"),
+               "text": (text or "").strip()[:3500],
+               "photo": photo,
+               "by": str(by_id or ""),
+               "name": (by_name or "—").strip()[:40],
+               "at": int(time.time())}
+        self._db["inbox"].setdefault(key, []).append(msg)
+        # زۆرترین ٥٠ نامە بۆ هەر بەکارهێنەرێک — کۆنەکان دەسڕدرێنەوە
+        if len(self._db["inbox"][key]) > 50:
+            self._db["inbox"][key] = self._db["inbox"][key][-50:]
+        self.save()
+        return msg
+
+    # ---- مینیوی سەرەکی: ناوەکان و بەشە زیادکراوەکان ----
+
+    def menu_label(self, key: str) -> Optional[str]:
+        v = self._db["settings"]["menu_labels"].get(key)
+        return (v or "").strip() or None if isinstance(v, str) else None
+
+    def set_menu_label(self, key: str, label: str):
+        lbl = (label or "").strip()[:40]
+        if lbl:
+            self._db["settings"]["menu_labels"][key] = lbl
+        else:
+            self._db["settings"]["menu_labels"].pop(key, None)
+        self.save()
+
+    def reset_menu_labels(self):
+        self._db["settings"]["menu_labels"] = {}
+        self.save()
+
+    def menu_extras(self) -> List[dict]:
+        return list(self._db["settings"].get("menu_extra") or [])
+
+    def add_menu_extra(self, label: str, page_id: str) -> dict:
+        item = {"id": new_id("mx"), "label": (label or "").strip()[:40],
+                "page_id": page_id}
+        self._db["settings"].setdefault("menu_extra", []).append(item)
+        self.save()
+        return item
+
+    def del_menu_extra(self, extra_id: str) -> bool:
+        lst = self._db["settings"].get("menu_extra") or []
+        before = len(lst)
+        self._db["settings"]["menu_extra"] = [x for x in lst if x.get("id") != extra_id]
+        changed = len(self._db["settings"]["menu_extra"]) != before
+        if changed:
+            self.save()
+        return changed
 
     # ---- تاقیکردنەوەی شەوانە (تاقیکردنەوەی کاتدار) ----
 

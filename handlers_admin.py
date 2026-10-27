@@ -5,7 +5,6 @@
 
 import asyncio
 import html as _html
-import json
 import logging
 import os
 import time
@@ -18,6 +17,7 @@ import config
 import fmtutil as fmt
 import handlers_user
 import keyboards as K
+import pdfimport
 import storage as st
 import texts as T
 
@@ -81,7 +81,8 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             reports=st.knum(storage.count_open_reports())),
         reply_markup=K.admin_main(storage.count_open_tickets(),
                                   storage.count_open_reports(),
-                                  storage.count_users(exclude_admins=True)))
+                                  storage.count_users(exclude_admins=True),
+                                  storage.count_pending_questions()))
 
 
 async def ensure_admin_commands(bot, chat_id):
@@ -121,7 +122,8 @@ async def cb_home(query, context):
                             reports=st.knum(storage.count_open_reports())),
         K.admin_main(storage.count_open_tickets(),
                      storage.count_open_reports(),
-                     storage.count_users(exclude_admins=True)))
+                     storage.count_users(exclude_admins=True),
+                     storage.count_pending_questions()))
 
 
 async def cb_folder(query, context, fid: str):
@@ -156,13 +158,18 @@ async def cb_question(query, context, qid: str):
     if not q or q.get("type") != "question":
         return await handlers_user.alert(query, T.Q_GONE)
     parent = st.find_parent_folder_id(tree, qid) or "root"
-    opts = "\n".join(
-        "{}) {} {}".format(st.LETTERS[i], o.get("text", ""), "✅" if o.get("correct") else "⬜")
-        for i, o in enumerate(q.get("options", [])))
+    opt_rows = []
+    corr = T.CORRECT_NONE
+    for i, o in enumerate(q.get("options", [])):
+        opt_rows.append("{}) {} {}".format(st.LETTERS[i], o.get("text", ""),
+                                           "✅" if o.get("correct") else "⬜"))
+        if o.get("correct"):
+            corr = st.LETTERS[i]
     text = T.Q_VIEW.format(
         text=q.get("text") or T.RESULT_IMG,
         img=("بەڵێ ✅" if q.get("image") else "نەخێر ❌"),
-        opts=opts or "—")
+        opts="\n".join(opt_rows) or "—",
+        corr=corr)
     await handlers_user.edit_message(query, text, K.admin_question(q, parent))
 
 
@@ -431,6 +438,52 @@ async def start_edit_image(query, context, qid: str):
     await _edit_prompt(context, chat, w, T.WIZ_EDIT_IMG, K.wiz_editimg_kb(qid))
 
 
+async def start_edit_option(query, context, qid: str, idx: int):
+    """دەستکاری دەقی هەڵبژاردەیەک (A/B/C/D) لە پرسیارێکدا."""
+    storage = _storage(context)
+    q = st.find_node(storage.db()["tree"], qid)
+    if not q or q.get("type") != "question":
+        return await handlers_user.alert(query, T.Q_GONE)
+    options = q.get("options") or []
+    if idx < 0 or idx >= len(options):
+        return await handlers_user.alert(query, T.Q_GONE)
+    chat = query.message.chat_id
+    w = {"flow": "editqopt", "step": "text",
+         "data": {"qid": qid, "idx": idx}}
+    storage.set_wizard(chat, w)
+    await _edit_prompt(
+        context, chat, w,
+        T.WIZ_EDIT_OPT.format(letter=st.LETTERS[idx],
+                              cur=st.trunc(options[idx].get("text", ""), 120)),
+        K.wiz_cancel_kb())
+
+
+async def cb_correct_pick(query, context, qid: str):
+    """شاشەی هەڵبژاردنی وەڵامی ڕاست بۆ پرسیارێک."""
+    storage = _storage(context)
+    q = st.find_node(storage.db()["tree"], qid)
+    if not q or q.get("type") != "question":
+        return await handlers_user.alert(query, T.Q_GONE)
+    corr = next((st.LETTERS[i] for i, o in enumerate(q.get("options") or [])
+                 if o.get("correct")), T.CORRECT_NONE)
+    await handlers_user.edit_message(
+        query, T.CORRECT_PICK_VIEW.format(cur=corr), K.correct_pick_kb(q))
+
+
+async def cb_correct_set(query, context, qid: str, idx: int):
+    """دیاریکردنی وەڵامی ڕاست — هەموو ئەوانی تر ناڕاست دەبن."""
+    storage = _storage(context)
+    q = st.find_node(storage.db()["tree"], qid)
+    if not q or q.get("type") != "question":
+        return await handlers_user.alert(query, T.Q_GONE)
+    options = q.get("options") or []
+    if idx < 0 or idx >= len(options):
+        return await handlers_user.alert(query, T.WIZ_INVALID_NUM)
+    storage.set_question_correct(qid, idx)
+    await handlers_user.alert(query, T.CORRECT_SAVED.format(letter=st.LETTERS[idx]))
+    await cb_question(query, context, qid)
+
+
 async def remove_image(query, context, qid: str):
     storage = _storage(context)
     storage.set_question_image(qid, None)
@@ -490,7 +543,7 @@ async def route_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE, w: di
         elif step == "options":
             if msg.text and msg.text.strip():
                 data["options"].append({"text": msg.text.strip()[:200], "correct": False})
-                if len(data["options"]) >= 6:
+                if len(data["options"]) >= 4:
                     _set_step(storage, chat, w, "correct")
                     await _edit_prompt(context, chat, w, T.WIZ_Q_CORRECT,
                                        K.wiz_correct_kb(data["options"]))
@@ -534,7 +587,7 @@ async def route_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE, w: di
         elif step == "options":
             if msg.text and msg.text.strip():
                 data["options"].append({"text": msg.text.strip()[:200], "correct": False})
-                if len(data["options"]) >= 6:
+                if len(data["options"]) >= 4:
                     _set_step(storage, chat, w, "correct")
                     await _edit_prompt(context, chat, w, T.WIZ_Q_CORRECT,
                                        K.eb_correct_kb(data["options"]))
@@ -645,8 +698,41 @@ async def route_wizard(update: Update, context: ContextTypes.DEFAULT_TYPE, w: di
     if flow == "tkreply":
         return await _finish_ticket_reply(update, context, w, data)
 
-    if flow == "impjson":
-        return await _route_import(update, context, w, data, msg)
+    if flow == "impfile":
+        if step == "file":
+            return await _route_impfile(update, context, w, data, msg)
+        await msg.reply_text(T.WIZ_USE_BUTTONS)
+        return
+
+    if flow == "pqrev":
+        # لەم فلۆوەدا تەنها دوگمەکان بەکاردێن — وەڵامی ڕاست بە دوگمە هەڵدەبژێردرێت
+        await msg.reply_text(T.PQ_USE_BUTTONS)
+        return
+
+    if flow == "editqopt":
+        if not (msg.text and msg.text.strip()):
+            return await msg.reply_text(T.WIZ_NEED_TEXT)
+        try:
+            idx = int(data.get("idx", -1))
+        except (TypeError, ValueError):
+            idx = -1
+        ok = storage.set_question_option(data.get("qid"), idx, msg.text.strip()[:200])
+        storage.clear_wizard(chat)
+        if not ok:
+            return await msg.reply_text(T.Q_GONE)
+        letter = st.LETTERS[idx] if 0 <= idx < len(st.LETTERS) else "؟"
+        await msg.reply_text(T.OPT_SAVED.format(letter=letter),
+                             reply_markup=K.back_to_question_kb(data.get("qid")))
+        return
+
+    if flow == "menulabel":
+        return await _finish_menu_label(update, context, w)
+
+    if flow == "menuextra":
+        if step == "title":
+            return await _finish_menu_extra(update, context, w)
+        await msg.reply_text(T.WIZ_USE_BUTTONS)
+        return
 
     # هیچ لقێک وەڵامی نەدەوە — بێدەنگ مەبە (چارەسەری بڕوان)
     await msg.reply_text(T.WIZ_NEED_TEXT)
@@ -679,9 +765,9 @@ async def wx_done(query, context):
     storage, chat, w = _wiz_of(query, context)
     if not w or w.get("flow") not in ("addq", "qnbank") or w.get("step") != "options":
         return await _wiz_gone(query)
-    if len(w["data"].get("options", [])) < 2:
+    if len(w["data"].get("options", [])) < 4:
         try:
-            await query.message.reply_text(T.WIZ_NEED_MIN2)
+            await query.message.reply_text(T.WIZ_NEED_FOUR)
         except Exception:
             pass
         return
@@ -913,7 +999,17 @@ async def _finish_ticket_reply(update, context, w: dict, data: dict):
         return await msg.reply_text(T.WIZ_NEED_TEXT)
 
     admin_name = (msg.from_user.first_name or "ئادمین").strip()
-    head = T.USER_REPLY_HEAD.format(id=st.knum(tid), reply=fmt.apply(text) if text else "")
+    # پرسیارەکەی بەکارهێنەر لە سەرەتای وەڵامەکە دەنووسرێت
+    qtext = fmt.plain(ticket.get("text") or "")
+    q_label = st.trunc(qtext, 600) if qtext else (
+        "🖼 (وێنە)" if ticket.get("photo") else "—")
+    reply_part = (fmt.apply(text) if text else ("🖼 (وێنە)" if photo else "—"))
+    head = T.USER_REPLY_HEAD.format(id=st.knum(tid), q=fmt.apply(q_label),
+                                    reply=reply_part)
+    if len(head) > 1000:
+        head = T.USER_REPLY_HEAD.format(id=st.knum(tid),
+                                        q=fmt.apply(st.trunc(qtext, 120)),
+                                        reply=reply_part)
     delivered = False
     sent_msg = None
     try:
@@ -946,241 +1042,360 @@ async def _finish_ticket_reply(update, context, w: dict, data: dict):
         await msg.reply_text(T.TK_USER_GONE)
 
 
-# ---------------- هێنانی پرسیار بە JSON ----------------
+# ---------------- هێنانی پرسیار بە PDF/وێنە ----------------
 
-_SEC_TITLE_KEYS = ("بەش", "بەشی", "ناو", "نام", "کەرت", "کەرتی",
-                   "title", "section", "chapter", "name", "folder")
-_CHILD_KEYS = ("کەرتەکان", "بەشەکان", "بەشە ناوەوەکان", "children", "sections",
-               "subs", "subsections")
-_QS_KEYS = ("پرسیارەکان", "پرسیار", "questions", "qs")
-_Q_TEXT_KEYS = ("پرسیار", "پرسیارەکە", "دەق", "question", "q", "text")
-_Q_IMG_KEYS = ("وێنە", "وێنەی پرسیار", "image", "img", "photo", "picture")
-_Q_OPT_KEYS = ("هەڵبژاردە", "هەڵبژاردەکان", "بژاردە", "options", "opts", "choices")
-_Q_ANS_KEYS = ("وەڵام", "وەڵامی ڕاست", "ڕاست", "answer", "correct", "correct_answer")
-_Q_EXPL_KEYS = ("ڕوونکردنەوە", "تێبینی", "explanation", "expl", "note")
-
-
-def _pick(d, keys):
-    for k in keys:
-        v = d.get(k)
-        if v not in (None, "", []):
-            return v
-    return None
-
-
-def _import_question(storage, q, folder_id, stats, errors, where):
-    if not isinstance(q, dict):
-        errors.append("{}: جۆرەکەی دروست نییە".format(where))
-        return
-    text = _pick(q, _Q_TEXT_KEYS)
-    image = _pick(q, _Q_IMG_KEYS)
-    opts = _pick(q, _Q_OPT_KEYS)
-    ans = _pick(q, _Q_ANS_KEYS)
-    expl = _pick(q, _Q_EXPL_KEYS)
-
-    if not isinstance(opts, list) or len(opts) < 2:
-        errors.append("{}: لانیکەم ٢ هەڵبژاردە پێویستە".format(where))
-        return
-    if len(opts) > 6:
-        errors.append("{}: زۆرترین ٦ هەڵبژاردە".format(where))
-        return
-    opt_texts = [str(o).strip() for o in opts]
-    if any(not t for t in opt_texts):
-        errors.append("{}: هەڵبژاردەی بەتاڵ ڕێگەپێدراو نییە".format(where))
-        return
-
-    idx = None
-    if isinstance(ans, bool):
-        idx = None
-    elif isinstance(ans, int):
-        idx = ans - 1  # ژمارەکردن لە ١ ەوە
-    elif isinstance(ans, str):
-        s2 = ans.strip().translate(st._WESTERN_TABLE)
-        if s2.isdigit():
-            idx = int(s2) - 1
-        elif s2.strip().upper() in st.LETTERS[:6]:
-            idx = st.LETTERS.index(s2.strip().upper())
-        else:
-            for i, t in enumerate(opt_texts):
-                if t == ans.strip():
-                    idx = i
-                    break
-    if idx is None or idx < 0 or idx >= len(opt_texts):
-        errors.append("{}: وەڵامی ڕاست دیاری نەکراوە (ژمارە ١ بۆ {} یان پیت A-{})".format(
-            where, st.knum(len(opt_texts)), st.LETTERS[len(opt_texts) - 1]))
-        return
-
-    text_s = str(text).strip()[:3500] if text else ""
-    img_s = str(image).strip() if image else ""
-    if not text_s and not img_s:
-        errors.append("{}: دەق یان وێنە پێویستە".format(where))
-        return
-
-    options = [{"text": t, "correct": (i == idx)} for i, t in enumerate(opt_texts)]
-    node = storage.add_question(folder_id, text_s, img_s or None, options)
-    if isinstance(expl, str) and expl.strip():
-        node["expl"] = fmt.plain(expl.strip())[:1000]
-        storage.save()
-    stats["questions"] += 1
-
-
-def _import_node(storage, node, parent_id, top, stats, errors, where):
-    if not isinstance(node, dict):
-        errors.append("{}: جۆرەکەی دروست نییە".format(where))
-        return
-    qs = _pick(node, _QS_KEYS)
-    subs = None
-    for k in _CHILD_KEYS:
-        if isinstance(node.get(k), list):
-            subs = node[k]
-            break
-
-    # دیاریکردنی ناوی بەشەکە
-    title = None
-    if top:
-        t1 = node.get("بەش") or node.get("بەشی")
-        if isinstance(t1, str) and t1.strip():
-            folder, created = storage.ensure_folder("root", t1.strip()[:60])
-            if created:
-                stats["folders"] += 1
-            deeper = folder["id"]
-            t2 = node.get("کەرت") or node.get("کەرتی")
-            if isinstance(t2, str) and t2.strip():
-                folder2, created2 = storage.ensure_folder(deeper, t2.strip()[:60])
-                if created2:
-                    stats["folders"] += 1
-                deeper = folder2["id"]
-            title = t1.strip()[:60]
-        else:
-            t0 = _pick(node, ("کەرت", "کەرتی", "ناو", "نام", "title", "name", "section", "chapter"))
-            if isinstance(t0, str) and t0.strip():
-                folder, created = storage.ensure_folder("root", t0.strip()[:60])
-                if created:
-                    stats["folders"] += 1
-                deeper = folder["id"]
-                title = t0.strip()[:60]
-            else:
-                # ناوی نییە بەڵام پرسیارەکان لەناودان — بەشێکی خۆکار دروست بکە
-                folder, created = storage.ensure_folder("root", "بەشی بێ ناو")
-                if created:
-                    stats["folders"] += 1
-                deeper = folder["id"]
-                title = "بەشی بێ ناو"
-    else:
-        t0 = _pick(node, _SEC_TITLE_KEYS)
-        if isinstance(t0, str) and t0.strip():
-            folder, created = storage.ensure_folder(parent_id, t0.strip()[:60])
-            if created:
-                stats["folders"] += 1
-            deeper = folder["id"]
-            title = t0.strip()[:60]
-        else:
-            deeper = parent_id
-
-    if title is None and not qs and not subs:
-        errors.append("{}: ناوی بەش یان پرسیارەکان نەدۆزرانەوە".format(where))
-        return
-    if title is None:
-        deeper = deeper or parent_id or "root"
-
-    if isinstance(qs, list):
-        for qi, q in enumerate(qs, 1):
-            _import_question(storage, q, deeper, stats, errors,
-                             "{} › پرسیار {}".format(where, qi) if where
-                             else "پرسیار {}".format(qi))
-    elif qs is not None and not isinstance(qs, list):
-        errors.append("{}: «پرسیارەکان» دەبێت لیست بێت".format(where))
-
-    if isinstance(subs, list):
-        for si, sub in enumerate(subs, 1):
-            _import_node(storage, sub, deeper, False, stats, errors,
-                         "{} › بەشی {}".format(where, si) if where
-                         else "بەشی {}".format(si))
-
-
-def import_json_data(storage, raw: str):
-    """داتای JSON هەڵدەشێوێت و بۆ دارچینەکە زیادی دەکات.
-    گەڕانەوە: (stats, errors) — stats: {"folders": n, "questions": n}"""
-    stats = {"folders": 0, "questions": 0}
-    errors = []
-    data = json.loads(raw)
-    if isinstance(data, list):
-        for i, item in enumerate(data, 1):
-            _import_node(storage, item, "root", True, stats, errors,
-                         "بەشی {}".format(st.knum(i)))
-    elif isinstance(data, dict):
-        wrapper = None
-        for k in _CHILD_KEYS:
-            if isinstance(data.get(k), list):
-                wrapper = data[k]
-                break
-        if wrapper is not None:
-            for i, item in enumerate(wrapper, 1):
-                _import_node(storage, item, "root", True, stats, errors,
-                             "بەشی {}".format(st.knum(i)))
-        elif _pick(data, _QS_KEYS) is not None or "بەش" in data or "کەرت" in data:
-            _import_node(storage, data, "root", True, stats, errors, "")
-        else:
-            raise ValueError(T.IMP_UNKNOWN)
-    else:
-        raise ValueError(T.IMP_UNKNOWN)
-    return stats, errors
-
-
-async def start_import_json(query, context):
+async def cb_impfile(query, context):
+    """دەستپێکردنی هێنان: سەرەتا بەش و کەرتەکە هەڵبژێرە کە پرسیارەکانی بۆ زیاد دەکرێت."""
     storage = _storage(context)
     chat = query.message.chat_id
-    storage.set_wizard(chat, {"flow": "impjson", "step": "file", "data": {}})
-    text = T.IMP_PROMPT + "\n\n" + T.IMP_EXAMPLE + "\n\n" + T.IMP_NOT_FILE
-    await handlers_user.edit_message(query, text, K.wiz_cancel_kb())
+    tree = storage.db()["tree"]
+    if not tree:
+        return await handlers_user.alert(query, T.NO_SECTIONS)
+    storage.set_wizard(chat, {"flow": "impfile", "step": "folder",
+                              "data": {"path": []}})
+    children = [n for n in tree if n.get("type") == "folder"]
+    await handlers_user.edit_message(
+        query, T.IMP2_PICK,
+        K.folder_picker_kb(children, 0, "impf:", "wx:cancel", T.A_QN_BTN_PICK_THIS))
 
 
-MAX_IMPORT_BYTES = 2 * 1024 * 1024
+async def cb_impf(query, context, data: str):
+    """ڕاوکردنی بەش/کەرت بۆ هێنان: impf:go:<fid> / impf:back / impf:ok"""
+    storage = _storage(context)
+    chat = query.message.chat_id
+    w = storage.get_wizard(chat)
+    if not w or w.get("flow") != "impfile":
+        return await handlers_user.alert(query, T.WIZ_GONE, K.back_to_panel_kb())
+    tree = storage.db()["tree"]
+    d = w.setdefault("data", {})
+    path = d.get("path") or []
+
+    if data == "impf:back":
+        if path:
+            path.pop()
+            d["path"] = path
+            storage.set_wizard(chat, w)
+        return await _imp_render_folder(query, context, w)
+
+    if data == "impf:ok":
+        if not path:
+            return await handlers_user.alert(query, T.ASK_NEED_PICK)
+        fid = path[-1]
+        folder = st.find_node(tree, fid)
+        if not folder:
+            return await handlers_user.alert(query, T.GONE)
+        d["folder_id"] = fid
+        d["folder_title"] = folder.get("title", "?")
+        w["step"] = "file"
+        storage.set_wizard(chat, w)
+        return await handlers_user.edit_message(query, T.IMP2_SEND, K.wiz_cancel_kb())
+
+    if data.startswith("impf:go:"):
+        fid = data[8:]
+        node = st.find_node(tree, fid)
+        if not node or node.get("type") != "folder":
+            return await handlers_user.alert(query, T.GONE)
+        path.append(fid)
+        d["path"] = path
+        storage.set_wizard(chat, w)
+        return await _imp_render_folder(query, context, w)
 
 
-async def _route_import(update, context, w, data, msg):
+async def _imp_render_folder(query, context, w):
+    storage = _storage(context)
+    tree = storage.db()["tree"]
+    path = (w.get("data") or {}).get("path") or []
+    if path:
+        node = st.find_node(tree, path[-1])
+        children = [c for c in node.get("children", []) if c.get("type") == "folder"]
+    else:
+        children = [n for n in tree if n.get("type") == "folder"]
+    await handlers_user.edit_message(
+        query, T.IMP2_PICK,
+        K.folder_picker_kb(children, len(path), "impf:", "wx:cancel",
+                           T.A_QN_BTN_PICK_THIS))
+
+
+async def _route_impfile(update, context, w, data, msg):
+    """هەنگاوی ناردنی فایل: PDF (Document) یان وێنە (Photo یان Document ی وێنە)."""
     storage = _storage(context)
     chat = msg.chat_id
-    raw = None
+    doc, photo = msg.document, msg.photo
+    if not doc and not photo:
+        return await msg.reply_text(T.IMP2_BAD_FILE)
 
-    if msg.document:
-        doc = msg.document
-        if (doc.file_size or 0) > MAX_IMPORT_BYTES:
-            return await msg.reply_text(T.IMP_TOO_BIG)
-        try:
-            tg_file = await doc.get_file()
-            path = os.path.join(config.DATA_DIR, "import_{}.json".format(chat))
-            await tg_file.download_to_drive(path)
-            with open(path, "r", encoding="utf-8") as f:
-                raw = f.read()
-            os.remove(path)
-        except Exception as e:
-            log.warning("داگرتنی فایلی JSON: %s", e)
-            return await msg.reply_text(T.IMP_NOT_FILE)
-    elif msg.text and msg.text.strip():
-        raw = msg.text.strip()
-    else:
-        return await msg.reply_text(T.IMP_NOT_FILE)
+    is_pdf = bool(doc and (doc.mime_type or "").endswith("pdf"))
+    if doc and not is_pdf and not (doc.mime_type or "").startswith("image/"):
+        return await msg.reply_text(T.IMP2_BAD_FILE)
+    if doc and (doc.file_size or 0) > pdfimport.MAX_FILE_BYTES:
+        return await msg.reply_text(T.IMP2_TOO_BIG)
+
+    await msg.reply_text(T.IMP2_PARSING)
+    ext = ".pdf" if is_pdf else ".img"
+    path = os.path.join(config.DATA_DIR, "imp_{}{}".format(chat, ext))
+    try:
+        tg_file = await (doc or photo[-1]).get_file()
+        await tg_file.download_to_drive(path)
+    except Exception as e:
+        log.warning("داگرتنی فایلی هێنان: %s", e)
+        return await msg.reply_text(T.IMP2_BAD_FILE)
 
     try:
-        stats, errors = import_json_data(storage, raw)
-    except json.JSONDecodeError as e:
-        return await msg.reply_text(T.IMP_BAD.format(err=str(e)[:300]))
-    except ValueError as e:
-        return await msg.reply_text(str(e))
+        if is_pdf:
+            raw = pdfimport.pdf_text(path)
+        else:
+            raw = pdfimport.image_text(path)
+    except pdfimport.ImportError_ as e:
+        return await msg.reply_text(T.IMP2_READ_ERR.format(err=str(e)))
+    except Exception as e:
+        log.warning("دەرهێنانی دەق: %s", e)
+        return await msg.reply_text(T.IMP2_READ_ERR.format(err="—"))
+    finally:
+        try:
+            os.remove(path)
+        except Exception:
+            pass
 
+    questions = pdfimport.parse_questions(raw)
+    if not questions:
+        return await msg.reply_text(T.IMP2_NONE)
+
+    d = w.setdefault("data", {})
+    d["questions"] = questions
+    w["step"] = "confirm"
+    storage.set_wizard(chat, w)
+    n_ans = sum(1 for q in questions if q["answered"])
+    await msg.reply_text(
+        T.IMP2_CONFIRM.format(q=st.knum(len(questions)), a=st.knum(n_ans),
+                              p=st.knum(len(questions) - n_ans),
+                              folder=d.get("folder_title") or "—"),
+        reply_markup=K.imp_confirm_kb())
+
+
+async def cb_impok(query, context):
+    """دووپاتکردنەوەی زیادکردنی پرسیارە پارسکراوەکان بۆ بەشەکە."""
+    storage = _storage(context)
+    chat = query.message.chat_id
+    w = storage.get_wizard(chat)
+    if not w or w.get("flow") != "impfile" or w.get("step") != "confirm":
+        return await handlers_user.alert(query, T.WIZ_GONE, K.back_to_panel_kb())
+    d = w.get("data") or {}
+    questions = d.get("questions") or []
+    fid = d.get("folder_id")
+    folder = st.find_node(storage.db()["tree"], fid)
+    folder_title = (folder or {}).get("title") or d.get("folder_title") or "—"
+    pending = []
+    for q in questions:
+        node = storage.add_question(fid, q["text"], None, q["options"])
+        if not q["answered"]:
+            pending.append(node["id"])
     storage.clear_wizard(chat)
-    if stats["questions"] == 0 and not errors:
-        return await msg.reply_text(T.IMP_NONE)
+    n = len(questions)
+    await query.message.reply_text(
+        T.IMP2_DONE.format(folder=folder_title, q=st.knum(n),
+                           a=st.knum(n - len(pending)), p=st.knum(len(pending))),
+        reply_markup=K.after_import_kb(fid))
+    if pending:
+        storage.set_wizard(chat, {"flow": "pqrev", "step": "go",
+                                  "data": {"qids": pending}})
+        try:
+            await context.bot.send_message(
+                chat, T.IMP2_REVIEW_HEAD.format(n=st.knum(len(pending))))
+        except Exception:
+            pass
+        await _pq_send(context, chat, storage.get_wizard(chat))
 
-    out = T.IMP_DONE.format(f=st.knum(stats["folders"]), q=st.knum(stats["questions"]))
-    if errors:
-        shown = errors[:10]
-        errs = "\n".join("• " + st.trunc(e, 80) for e in shown)
-        if len(errors) > 10:
-            errs += "\n• … و {} هەڵەی تر".format(st.knum(len(errors) - 10))
-        out += T.IMP_ERRS.format(n=st.knum(len(errors)), errs=errs)
-    await msg.reply_text(out, reply_markup=K.after_import_kb())
+
+# ---------------- دیاریکردنی وەڵامی ڕاست بە دەست (پرسیاری بێ وەڵام) ----------------
+
+async def cb_pending(query, context):
+    """دەستپێکردنی پێداچوونەوە بۆ هەموو پرسیارە بێ وەڵامەکانی دارچینەکە."""
+    storage = _storage(context)
+    chat = query.message.chat_id
+    qids = storage.pending_question_ids(limit=150)
+    if not qids:
+        return await handlers_user.alert(query, T.PENDING_NONE, K.back_to_panel_kb())
+    storage.set_wizard(chat, {"flow": "pqrev", "step": "go", "data": {"qids": qids}})
+    await handlers_user.alert(query, T.IMP2_REVIEW_HEAD.format(n=st.knum(len(qids))))
+    await _pq_send(context, chat, storage.get_wizard(chat))
+
+
+async def _pq_send(context, chat, w):
+    """پرسیاری ئێستای پێداچوونەوە دەنێرێت — دوگمەکانی A-D بۆ دیاریکردنی وەڵامی ڕاست."""
+    storage = _storage(context)
+    if not w or w.get("flow") != "pqrev":
+        return
+    qids = (w.get("data") or {}).get("qids") or []
+    if not qids:
+        storage.clear_wizard(chat)
+        try:
+            await context.bot.send_message(chat, T.PQ_ALL_DONE)
+        except Exception:
+            pass
+        return
+    q = st.find_node(storage.db()["tree"], qids[0])
+    if not q:
+        w["data"]["qids"] = qids[1:]
+        storage.set_wizard(chat, w)
+        return await _pq_send(context, chat, w)
+    text = T.PENDING_VIEW.format(left=st.knum(len(qids)),
+                                 text=fmt.plain(q.get("text") or T.RESULT_IMG))
+    try:
+        await context.bot.send_message(
+            chat, text, reply_markup=K.pq_review_kb(q.get("options") or []))
+    except Exception:
+        pass
+
+
+async def cb_pq(query, context, data: str):
+    """pqset:<idx> / pqskip / pqdone — پێداچوونەوەی پرسیارە بێ وەڵامەکان."""
+    storage = _storage(context)
+    chat = query.message.chat_id
+    w = storage.get_wizard(chat)
+    if not w or w.get("flow") != "pqrev":
+        return await handlers_user.alert(query, T.WIZ_GONE, K.back_to_panel_kb())
+    qids = w.get("data", {}).get("qids") or []
+
+    if data == "pqdone":
+        left = len(qids)
+        storage.clear_wizard(chat)
+        msg = T.PQ_ALL_DONE if not left else T.PQ_DONE_LEFT.format(left=st.knum(left))
+        return await handlers_user.alert(query, msg, K.back_to_panel_kb())
+
+    if not qids:
+        storage.clear_wizard(chat)
+        return await handlers_user.alert(query, T.PQ_ALL_DONE, K.back_to_panel_kb())
+
+    qid = qids[0]
+
+    if data == "pqskip":
+        qids.pop(0)
+        w["data"]["qids"] = qids
+        storage.set_wizard(chat, w)
+        await handlers_user.alert(query, T.PQ_SKIPPED)
+        return await _pq_send(context, chat, w)
+
+    if data.startswith("pqset:"):
+        try:
+            idx = int(data[6:])
+        except ValueError:
+            return
+        q = st.find_node(storage.db()["tree"], qid)
+        if not q:
+            qids.pop(0)
+            w["data"]["qids"] = qids
+            storage.set_wizard(chat, w)
+            return await _pq_send(context, chat, w)
+        options = q.get("options") or []
+        if idx < 0 or idx >= len(options):
+            return await handlers_user.alert(query, T.WIZ_INVALID_NUM)
+        storage.set_question_correct(qid, idx)
+        qids.pop(0)
+        w["data"]["qids"] = qids
+        storage.set_wizard(chat, w)
+        await handlers_user.alert(query, T.PQ_SAVED)
+        return await _pq_send(context, chat, w)
+
+
+# ---------------- بەڕێوەبردنی مینیوی سەرەکی ----------------
+
+async def cb_menu(query, context):
+    storage = _storage(context)
+    items = "\n".join("• " + K.menu_label(storage, key) for key in K.MENU_KEYS)
+    extras = storage.menu_extras()
+    extras_txt = ("\n".join("• " + (x.get("label") or "؟") for x in extras)
+                  if extras else T.MENU_EXTRAS_EMPTY)
+    await handlers_user.edit_message(
+        query, T.MENU_VIEW.format(items=items, extras=extras_txt),
+        K.menu_admin_kb(storage))
+
+
+async def cb_menu_label(query, context, key: str):
+    storage = _storage(context)
+    if key not in K.MENU_KEYS:
+        return
+    chat = query.message.chat_id
+    cur = K.menu_label(storage, key)
+    storage.set_wizard(chat, {"flow": "menulabel", "step": "label",
+                              "data": {"key": key}})
+    await handlers_user.edit_message(query, T.WIZ_MENU_LABEL.format(cur=cur),
+                                     K.wiz_cancel_kb())
+
+
+async def _finish_menu_label(update, context, w):
+    storage = _storage(context)
+    msg = update.message
+    chat = msg.chat_id
+    label = (msg.text or "").strip()
+    if not label:
+        return await msg.reply_text(T.WIZ_NEED_TEXT)
+    key = (w.get("data") or {}).get("key")
+    if key not in K.MENU_KEYS:
+        storage.clear_wizard(chat)
+        return await msg.reply_text(T.ERR)
+    if label == "-":
+        storage.set_menu_label(key, "")
+    else:
+        storage.set_menu_label(key, label)
+    storage.clear_wizard(chat)
+    await msg.reply_text(T.MENU_LABEL_SAVED.format(label=K.menu_label(storage, key)))
+
+
+async def cb_menu_reset(query, context):
+    storage = _storage(context)
+    storage.reset_menu_labels()
+    await handlers_user.alert(query, T.MENU_RESET_DONE)
+    await cb_menu(query, context)
+
+
+async def cb_menu_extra(query, context):
+    storage = _storage(context)
+    if not storage.db()["pages"]:
+        return await handlers_user.alert(query, T.MENU_NEED_PAGE, K.back_to_panel_kb())
+    chat = query.message.chat_id
+    storage.set_wizard(chat, {"flow": "menuextra", "step": "title", "data": {}})
+    await handlers_user.edit_message(query, T.WIZ_MENU_EXTRA, K.wiz_cancel_kb())
+
+
+async def _finish_menu_extra(update, context, w):
+    storage = _storage(context)
+    msg = update.message
+    chat = msg.chat_id
+    label = (msg.text or "").strip()
+    if not label:
+        return await msg.reply_text(T.WIZ_NEED_TEXT)
+    pages = storage.db()["pages"]
+    if not pages:
+        storage.clear_wizard(chat)
+        return await msg.reply_text(T.MENU_NEED_PAGE)
+    w["step"] = "page"
+    w.setdefault("data", {})["label"] = st.trunc(label, 40)
+    storage.set_wizard(chat, w)
+    await msg.reply_text(T.WIZ_MENU_EXTRA_PICK,
+                         reply_markup=K.menu_extra_pick_kb(pages))
+
+
+async def cb_menu_extra_pick(query, context, pid: str):
+    storage = _storage(context)
+    chat = query.message.chat_id
+    w = storage.get_wizard(chat)
+    if not w or w.get("flow") != "menuextra" or w.get("step") != "page":
+        return await handlers_user.alert(query, T.WIZ_GONE, K.back_to_panel_kb())
+    page = next((p for p in storage.db()["pages"] if p.get("id") == pid), None)
+    if not page:
+        return await handlers_user.alert(query, T.PAGE_GONE)
+    label = (w.get("data") or {}).get("label") or page.get("title") or "📄"
+    storage.add_menu_extra(label, pid)
+    storage.clear_wizard(chat)
+    await handlers_user.alert(query, T.MENU_EXTRA_SAVED.format(label=label))
+    await cb_menu(query, context)
+
+
+async def cb_menu_extra_del(query, context, extra_id: str):
+    storage = _storage(context)
+    storage.del_menu_extra(extra_id)
+    await handlers_user.alert(query, T.MENU_EXTRA_DELETED)
+    await cb_menu(query, context)
 
 
 # ============================================================================
@@ -1315,8 +1530,14 @@ async def _finish_report_reply(update, context, w: dict, data: dict):
         return await msg.reply_text(T.WIZ_NEED_TEXT)
 
     admin_name = (msg.from_user.first_name or "ئادمین").strip()
+    # پرسیارە ڕاپۆرتکراوەکە لە سەرەتای وەڵامەکە دەنووسرێت
+    reply_part = (fmt.apply(text) if text else ("🖼 (وێنە)" if photo else "—"))
+    q_label = fmt.plain(report.get("qtext") or "") or "—"
     head = T.RP_USER_HEAD.format(id=st.knum(report.get("id", 0)),
-                                 reply=fmt.apply(text) if text else "")
+                                 q=q_label, reply=reply_part)
+    if len(head) > 1000:
+        head = T.RP_USER_HEAD.format(id=st.knum(report.get("id", 0)),
+                                     q=st.trunc(q_label, 120), reply=reply_part)
     delivered = False
     sent_msg = None
     try:
@@ -1484,6 +1705,11 @@ async def _finish_user_msg(update, context, w: dict):
         # پاش ٢ چرکە ناوی ئادمین لە خوارەوەی نامەکە دەنووسرێت
         _schedule_admin_sign(context.bot, uid, sent_msg.message_id,
                              head or "📩", admin_name, caption=bool(photo))
+        # نامەکە دەچێتە «نامە هاتووەکان» ی بەکارهێنەرەوە
+        try:
+            storage.add_inbox_msg(uid, text, photo, msg.from_user.id, admin_name)
+        except Exception:
+            pass
 
     storage.clear_wizard(chat)
     await msg.reply_text(

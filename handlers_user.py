@@ -111,24 +111,23 @@ def fmt_ts(ts) -> str:
 
 
 def _collect_for_fid(storage, fid: str):
-    """(title, questions) بۆ بەشێک یان هەموو دارچینەکە."""
+    """(title, questions) بۆ بەشێک یان هەموو دارچینەکە.
+    پرسیارە بێ وەڵامەکان (کە هێشتا وەڵامی ڕاستیان دیاری نەکراوە) نایەنەوە."""
     tree = storage.db()["tree"]
     if fid in ("", "root"):
-        return T.QUIZ_ALL_TITLE, [q for n in tree for q in st.collect_questions(n)]
+        return T.QUIZ_ALL_TITLE, [q for n in tree for q in st.collect_questions(n)
+                                  if st.has_correct(q)]
     folder = st.find_node(tree, fid)
     if not folder or folder.get("type") != "folder":
         return None, []
-    return folder.get("title", "?"), st.collect_questions(folder)
+    return folder.get("title", "?"), [q for q in st.collect_questions(folder)
+                                      if st.has_correct(q)]
 
 
 # ---------------- فەرمانەکان ----------------
 
 def _main_menu(storage, user):
-    db = storage.db()
-    ev = storage.get_event()
-    has_event = bool(ev and ev.get("enabled"))
-    return K.main_menu(storage.is_admin(user.id), bool(db["pages"]), bool(db["tree"]),
-                       has_event)
+    return K.main_menu(storage, user)
 
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -617,7 +616,7 @@ async def cb_mq(query, context, data: str):
             node = st.find_node(tree, fid)
             if node:
                 for q in st.collect_questions(node):
-                    if q["id"] not in seen:
+                    if q["id"] not in seen and st.has_correct(q):
                         seen.add(q["id"])
                         questions.append(q)
         if not questions:
@@ -1202,7 +1201,7 @@ async def cb_qn(query, context, data: str):
         folder = st.find_node(storage.db()["tree"], fid) if fid else None
         if not folder:
             return await alert(query, T.NO_QUESTIONS, K.home_only())
-        questions = st.collect_questions(folder)
+        questions = [q for q in st.collect_questions(folder) if st.has_correct(q)]
         if not questions:
             return await alert(query, T.NO_QUESTIONS, K.home_only())
         count = int(src.get("count") or 0)
@@ -1245,6 +1244,145 @@ async def cb_mystats(query, context):
                             total=st.knum(total), correct=st.knum(correct),
                             pct=st.knum(pct))
     await edit_message(query, text, K.home_only())
+
+
+# ---------------- پرسیارەکانم / ڕاپۆرتەکانم / نامە هاتووەکان ----------------
+
+def _my_status_text(x: dict) -> str:
+    s = x.get("status")
+    if s == "closed":
+        return T.MY_STATUS_CLOSED
+    if s == "replied":
+        return T.MY_STATUS_REPLIED.format(n=st.knum(len(x.get("replies") or [])))
+    return T.MY_STATUS_OPEN
+
+
+def _my_replies_text(x: dict) -> str:
+    replies = x.get("replies") or []
+    if not replies:
+        return T.MY_NO_REPLY
+    out = T.MY_REPLIES_HEAD
+    for i, r in enumerate(replies, 1):
+        body = fmt.apply(r.get("text") or "")
+        out += T.MY_REPLY_ITEM.format(i=st.knum(i), name=r.get("name") or "—",
+                                      date=fmt_ts(r.get("at")),
+                                      text=body or T.MY_REPLY_PHOTO)
+        if r.get("photo"):
+            out += T.MY_REPLY_PHOTO
+    return out
+
+
+async def cb_myq(query, context):
+    storage = _storage(context)
+    tickets = storage.user_tickets(query.from_user.id)
+    if not tickets:
+        return await alert(query, T.MYQ_EMPTY, K.home_only())
+    await edit_message(query, T.MYQ_TITLE.format(n=st.knum(len(tickets))),
+                       K.my_tickets_kb(tickets))
+
+
+async def _send_my_ticket(context, query, t: dict):
+    chat = query.message.chat_id
+    text = T.MY_TICKET_VIEW.format(
+        id=st.knum(t.get("id", 0)),
+        path=" › ".join(t.get("path") or []) or "—",
+        text=fmt.apply(t.get("text") or "") or "🖼",
+        date=fmt_ts(t.get("created")),
+        status=_my_status_text(t),
+        replies=_my_replies_text(t))
+    try:
+        await fmt.send_html(context.bot, chat, text)
+    except Exception:
+        pass
+    # وێنەکانی وەڵامەکان بە پەیامی جیا دەنێردرێن
+    for r in (t.get("replies") or []):
+        if r.get("photo"):
+            try:
+                await fmt.send_photo_html(context.bot, chat, r["photo"],
+                                          fmt.apply(r.get("text") or "") or None)
+            except Exception:
+                pass
+
+
+async def cb_myq_view(query, context, tid_raw: str):
+    storage = _storage(context)
+    tid = st.to_int(tid_raw)
+    t = storage.get_ticket(tid) if tid is not None else None
+    if not t or str(t.get("uid")) != str(query.from_user.id):
+        return await alert(query, T.TK_GONE, K.home_only())
+    return await _send_my_ticket(context, query, t)
+
+
+async def cb_myrp(query, context):
+    storage = _storage(context)
+    reports = storage.user_reports(query.from_user.id)
+    if not reports:
+        return await alert(query, T.MYRP_EMPTY, K.home_only())
+    await edit_message(query, T.MYRP_TITLE.format(n=st.knum(len(reports))),
+                       K.my_reports_kb(reports))
+
+
+async def _send_my_report(context, query, r: dict):
+    chat = query.message.chat_id
+    text = T.MY_REPORT_VIEW.format(
+        id=st.knum(r.get("id", 0)),
+        quiz=r.get("quiz") or "—",
+        qtext=fmt.apply(r.get("qtext") or "") or "—",
+        comment=fmt.apply(r.get("comment") or "") or "—",
+        date=fmt_ts(r.get("created")),
+        status=_my_status_text(r),
+        replies=_my_replies_text(r))
+    try:
+        await fmt.send_html(context.bot, chat, text)
+    except Exception:
+        pass
+    for rep in (r.get("replies") or []):
+        if rep.get("photo"):
+            try:
+                await fmt.send_photo_html(context.bot, chat, rep["photo"],
+                                          fmt.apply(rep.get("text") or "") or None)
+            except Exception:
+                pass
+
+
+async def cb_myrp_view(query, context, rid_raw: str):
+    storage = _storage(context)
+    r = storage.get_report(rid_raw)
+    if not r or str(r.get("uid")) != str(query.from_user.id):
+        return await alert(query, T.RP_GONE, K.home_only())
+    return await _send_my_report(context, query, r)
+
+
+async def cb_myinbox(query, context):
+    storage = _storage(context)
+    msgs = storage.inbox_msgs(query.from_user.id)
+    if not msgs:
+        return await alert(query, T.MYINBOX_EMPTY, K.home_only())
+    await edit_message(query, T.MYINBOX_TITLE.format(n=st.knum(len(msgs))),
+                       K.my_inbox_kb(msgs))
+
+
+async def cb_myinbox_view(query, context, idx_raw: str):
+    storage = _storage(context)
+    try:
+        idx = int(idx_raw)
+    except (TypeError, ValueError):
+        return
+    msgs = storage.inbox_msgs(query.from_user.id)
+    if idx < 0 or idx >= len(msgs):
+        return await alert(query, T.MYINBOX_EMPTY, K.home_only())
+    m = msgs[idx]
+    chat = query.message.chat_id
+    text = T.MY_MSG_VIEW.format(date=fmt_ts(m.get("at")),
+                                name=m.get("name") or "—",
+                                text=fmt.apply(m.get("text") or "") or "—")
+    try:
+        if m.get("photo"):
+            await fmt.send_photo_html(context.bot, chat, m["photo"], text)
+        else:
+            await fmt.send_html(context.bot, chat, text)
+    except Exception:
+        pass
 
 
 # ---------------- ڕێگەکانی ویزاردی بەکارهێنەر ----------------

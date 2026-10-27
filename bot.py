@@ -219,6 +219,23 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         if data.startswith("reg:"):
             return await handlers_user.cb_reg(q, context, data[4:])
 
+        # ---------- پرسیارەکانم / ڕاپۆرتەکانم / نامە هاتووەکان (لای بەکارهێنەر) ----------
+        if data == "myq":
+            return await handlers_user.cb_myq(q, context)
+        if data.startswith("myqv:"):
+            return await handlers_user.cb_myq_view(q, context, data[5:])
+        if data == "myrp":
+            return await handlers_user.cb_myrp(q, context)
+        if data.startswith("myrpv:"):
+            return await handlers_user.cb_myrp_view(q, context, data[6:])
+        if data == "myinbox":
+            return await handlers_user.cb_myinbox(q, context)
+        if data.startswith("myinv:"):
+            return await handlers_user.cb_myinbox_view(q, context, data[6:])
+        if data.startswith("cx:"):
+            # بەشە زیادکراوەکانی مینیو — پەڕەیەکی زانیاری دەکەنەوە
+            return await handlers_user.cb_page(q, context, data[3:])
+
         # ---------- تاقیکردنەوەی تایبەت / ڕاپۆرت / فڵاشکارت / شەوانە / ئامار ----------
         if data == "mq" or data.startswith("mq:"):
             return await handlers_user.cb_mq(q, context, data)
@@ -242,8 +259,28 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return await handlers_admin.cb_tickets(q, context)
         if data.startswith("tk:"):
             return await handlers_admin.cb_ticket(q, context, data[3:])
-        if data == "impjson":
-            return await handlers_admin.start_import_json(q, context)
+        if data == "impfile":
+            return await handlers_admin.cb_impfile(q, context)
+        if data == "impok":
+            return await handlers_admin.cb_impok(q, context)
+        if data.startswith("impf:"):
+            return await handlers_admin.cb_impf(q, context, data)
+        if data == "pendq":
+            return await handlers_admin.cb_pending(q, context)
+        if data.startswith("pqset:") or data in ("pqskip", "pqdone"):
+            return await handlers_admin.cb_pq(q, context, data)
+        if data == "menu":
+            return await handlers_admin.cb_menu(q, context)
+        if data.startswith("menu:"):
+            return await handlers_admin.cb_menu_label(q, context, data[5:])
+        if data == "menureset":
+            return await handlers_admin.cb_menu_reset(q, context)
+        if data == "menuex":
+            return await handlers_admin.cb_menu_extra(q, context)
+        if data.startswith("menuexpick:"):
+            return await handlers_admin.cb_menu_extra_pick(q, context, data[11:])
+        if data.startswith("menuexdel:"):
+            return await handlers_admin.cb_menu_extra_del(q, context, data[10:])
 
         # ---------- ڕاپۆرتەکان (ئادمین) ----------
         if data == "admrp":
@@ -365,6 +402,26 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return await handlers_admin.remove_image(q, context, data[10:])
         if data.startswith("amqimg:"):
             return await handlers_admin.start_edit_image(q, context, data[7:])
+        if data.startswith("amqopt:"):
+            parts = data.split(":")
+            if len(parts) == 3:
+                try:
+                    idx = int(parts[2])
+                except ValueError:
+                    return
+                return await handlers_admin.start_edit_option(q, context, parts[1], idx)
+            return
+        if data.startswith("amqcorrp:"):
+            return await handlers_admin.cb_correct_pick(q, context, data[9:])
+        if data.startswith("amqcorrset:"):
+            parts = data.split(":")
+            if len(parts) == 3:
+                try:
+                    idx = int(parts[2])
+                except ValueError:
+                    return
+                return await handlers_admin.cb_correct_set(q, context, parts[1], idx)
+            return
         if data.startswith("amq:"):
             return await handlers_admin.cb_question(q, context, data[4:])
 
@@ -416,9 +473,9 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
 # فڵۆوەکانی ئادمین — تەنها بۆ ئادمینەکان
 ADMIN_FLOWS = {"addq", "qnbank", "newfolder", "rename", "newpage", "additem",
-               "addadmin", "setnum", "editqtext", "editqimg", "tkreply", "impjson",
-               "rpreply", "usrsearch", "qnev", "qntime", "qnsrc", "usrmsg",
-               "usrban", "bcast"}
+               "addadmin", "setnum", "editqtext", "editqimg", "editqopt", "tkreply",
+               "impfile", "rpreply", "usrsearch", "qnev", "qntime", "qnsrc", "usrmsg",
+               "usrban", "bcast", "menulabel", "menuextra", "pqrev"}
 
 # فڵۆوەکان کە لە route_wizard_extra دا مامەڵەیان لەگەڵ دەکرێت
 ADMIN_EXTRA_FLOWS = {"rpreply", "usrsearch", "qnev", "qntime", "qnsrc", "usrmsg",
