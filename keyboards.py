@@ -357,11 +357,23 @@ def admin_page(page) -> InlineKeyboardMarkup:
 
 
 def admins_kb(admins, owner_id) -> InlineKeyboardMarkup:
-    rows = [[btn("❌ {}".format(uid), "admdel:{}".format(uid))]
-            for uid in admins if uid != owner_id]
+    rows = []
+    for uid in admins:
+        if uid == owner_id:
+            continue
+        rows.append([btn("❌ {}".format(uid), "admdel:{}".format(uid)),
+                     btn(T.A_BTN_ADMIN_BAN, "admban:{}".format(uid)),
+                     btn(T.A_BTN_ADMIN_DEL, "admdelete:{}".format(uid))])
     rows.append([btn(T.A_BTN_ADD_ADMIN, "admadd")])
     rows.append([btn(T.A_BTN_BACK_PANEL, "adm")])
     return InlineKeyboardMarkup(rows)
+
+
+def admin_del_confirm_kb(uid) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup([
+        [btn(T.YES_DELETE, "admdeleteok:{}".format(uid)),
+         btn(T.NO_KEEP, "admadm")],
+    ])
 
 
 def settings_kb() -> InlineKeyboardMarkup:

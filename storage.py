@@ -358,8 +358,12 @@ class Storage:
         self.save()
         return profile
 
-    def count_users(self) -> int:
-        return len(self._db["users"])
+    def count_users(self, exclude_admins: bool = False) -> int:
+        """کۆی بەکارهێنەران — ئەگەر exclude_admins بێت، ئادمینەکان نایژمێردرێن."""
+        if not exclude_admins:
+            return len(self._db["users"])
+        return sum(1 for u in self._db["users"].values()
+                   if not self.is_admin(u.get("uid")))
 
     # ---- باندکردن و سڕینەوەی هەژمار (لای ئادمین) ----
 

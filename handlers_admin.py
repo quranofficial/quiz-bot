@@ -3,6 +3,8 @@
 ئادمینەکان و ڕێکخستنەکان — دۆخی ویزارد لە داتادا هەڵدەگیرێت تا لەگەڵ
 دووبارە دەستپێکردنەکانی GitHub Actions نەمایەوە."""
 
+import asyncio
+import html as _html
 import json
 import logging
 import os
@@ -26,6 +28,37 @@ def _storage(context) -> st.Storage:
     return context.bot_data["storage"]
 
 
+# ---------------- واژۆی ناوی ئادمین (پاش ٢ چرکە) ----------------
+
+def _schedule_admin_sign(bot, chat_id, message_id, base_text: str,
+                         admin_name: str, delay: float = 2.0,
+                         html_mode: bool = True, caption: bool = False):
+    """پاش ٢ چرکە ناوی ئادمین لە خوارەوەی پەیامەکە زیاد دەکات (بە بێ بلۆککردن).
+    html_mode: ئەگەر دەقە سەرەتاییەکە بە HTML نێردرابێت.
+    caption: ئەگەر پەیامەکە وێنە بێت (کاپشن)."""
+    async def _job():
+        try:
+            await asyncio.sleep(delay)
+            name = (_html.escape(admin_name or "") if html_mode
+                    else (admin_name or ""))
+            text = (base_text or "") + T.ADMIN_SIGN.format(name=name)
+            parse = "HTML" if html_mode else None
+            if caption:
+                await bot.edit_message_caption(chat_id=chat_id,
+                                               message_id=message_id,
+                                               caption=text, parse_mode=parse)
+            else:
+                await bot.edit_message_text(chat_id=chat_id,
+                                            message_id=message_id,
+                                            text=text, parse_mode=parse)
+        except Exception:
+            pass
+    try:
+        asyncio.create_task(_job())
+    except Exception:
+        pass
+
+
 # ---------------- فەرمانەکان ----------------
 
 async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -43,12 +76,12 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await ensure_admin_commands(context.bot, user.id)
         context.bot_data["cmds_set_{}".format(user.id)] = True
     await msg.reply_text(
-        T.ADMIN_HOME.format(users=st.knum(storage.count_users()),
+        T.ADMIN_HOME.format(users=st.knum(storage.count_users(exclude_admins=True)),
                             tickets=st.knum(storage.count_open_tickets()),
                             reports=st.knum(storage.count_open_reports())),
         reply_markup=K.admin_main(storage.count_open_tickets(),
                                   storage.count_open_reports(),
-                                  storage.count_users()))
+                                  storage.count_users(exclude_admins=True)))
 
 
 async def ensure_admin_commands(bot, chat_id):
@@ -83,12 +116,12 @@ async def cb_home(query, context):
     storage = _storage(context)
     await handlers_user.edit_message(
         query,
-        T.ADMIN_HOME.format(users=st.knum(storage.count_users()),
+        T.ADMIN_HOME.format(users=st.knum(storage.count_users(exclude_admins=True)),
                             tickets=st.knum(storage.count_open_tickets()),
                             reports=st.knum(storage.count_open_reports())),
         K.admin_main(storage.count_open_tickets(),
                      storage.count_open_reports(),
-                     storage.count_users()))
+                     storage.count_users(exclude_admins=True)))
 
 
 async def cb_folder(query, context, fid: str):
@@ -233,7 +266,10 @@ async def cb_admins(query, context):
         lines.append(T.ADMIN_ROW_OWNER.format(uid=config.OWNER_ID))
     others = [a for a in admins if a != config.OWNER_ID]
     if others:
-        lines.extend(T.ADMIN_ROW.format(uid=a) for a in others)
+        for a in others:
+            u = storage.get_user(a) or {}
+            name = st.trunc(u.get("name") or T.ADMIN_NAME_UNKNOWN, 26)
+            lines.append(T.ADMIN_ROW.format(uid=a, name=name))
     elif config.OWNER_ID is None:
         lines.append(T.ADMIN_ROW_NONE)
     await handlers_user.edit_message(
@@ -879,15 +915,20 @@ async def _finish_ticket_reply(update, context, w: dict, data: dict):
     admin_name = (msg.from_user.first_name or "ئادمین").strip()
     head = T.USER_REPLY_HEAD.format(id=st.knum(tid), reply=fmt.apply(text) if text else "")
     delivered = False
+    sent_msg = None
     try:
         if photo:
-            await fmt.send_photo_html(context.bot, ticket.get("uid"), photo,
-                                      head or "🖼", )
+            sent_msg = await fmt.send_photo_html(context.bot, ticket.get("uid"), photo,
+                                                 head or "🖼", )
         else:
-            await fmt.send_html(context.bot, ticket.get("uid"), head)
+            sent_msg = await fmt.send_html(context.bot, ticket.get("uid"), head)
         delivered = True
     except Exception as e:
         log.warning("ناردنی وەڵام بۆ بەکارهێنەر: %s", e)
+    if delivered and sent_msg:
+        # پاش ٢ چرکە ناوی ئادمین لە خوارەوەی وەڵامەکە دەنووسرێت
+        _schedule_admin_sign(context.bot, ticket.get("uid"), sent_msg.message_id,
+                             head or "🖼", admin_name, caption=bool(photo))
 
     ticket.setdefault("replies", []).append({
         "by": msg.from_user.id, "name": admin_name,
@@ -1277,14 +1318,19 @@ async def _finish_report_reply(update, context, w: dict, data: dict):
     head = T.RP_USER_HEAD.format(id=st.knum(report.get("id", 0)),
                                  reply=fmt.apply(text) if text else "")
     delivered = False
+    sent_msg = None
     try:
         if photo:
-            await fmt.send_photo_html(context.bot, report.get("uid"), photo, head or "🖼")
+            sent_msg = await fmt.send_photo_html(context.bot, report.get("uid"), photo, head or "🖼")
         else:
-            await fmt.send_html(context.bot, report.get("uid"), head)
+            sent_msg = await fmt.send_html(context.bot, report.get("uid"), head)
         delivered = True
     except Exception as e:
         log.warning("ناردنی وەڵامی ڕاپۆرت: %s", e)
+    if delivered and sent_msg:
+        # پاش ٢ چرکە ناوی ئادمین لە خوارەوەی وەڵامەکە دەنووسرێت
+        _schedule_admin_sign(context.bot, report.get("uid"), sent_msg.message_id,
+                             head or "🖼", admin_name, caption=bool(photo))
 
     report.setdefault("replies", []).append({
         "by": msg.from_user.id, "name": admin_name,
@@ -1313,7 +1359,9 @@ def _user_row(u: dict) -> str:
 
 async def cb_users(query, context, page: int = 1):
     storage = _storage(context)
-    users = storage.users_sorted()
+    # ئادمینەکان لە لیستی بەکارهێنەران نایان — تەنها لە بەشی ئادمینەکان
+    users = [u for u in storage.users_sorted()
+             if not storage.is_admin(u.get("uid"))]
     if not users:
         return await handlers_user.alert(query, T.A_USR_EMPTY, K.back_to_panel_kb())
     total = len(users)
@@ -1421,15 +1469,21 @@ async def _finish_user_msg(update, context, w: dict):
         return await msg.reply_text(T.WIZ_NEED_ITEM)
 
     head = T.USR_MSG_HEAD.format(reply=fmt.apply(text) if text else "")
+    admin_name = (msg.from_user.first_name or "ئادمین").strip()
+    sent_msg = None
     try:
         if photo:
-            await fmt.send_photo_html(context.bot, uid, photo, head or "📩")
+            sent_msg = await fmt.send_photo_html(context.bot, uid, photo, head or "📩")
         else:
-            await fmt.send_html(context.bot, uid, head)
+            sent_msg = await fmt.send_html(context.bot, uid, head)
     except Exception as e:
         log.warning("ناردنی نامەی تایبەت بۆ %s: %s", uid, e)
         storage.clear_wizard(chat)
         return await msg.reply_text(T.USR_MSG_GONE)
+    if sent_msg:
+        # پاش ٢ چرکە ناوی ئادمین لە خوارەوەی نامەکە دەنووسرێت
+        _schedule_admin_sign(context.bot, uid, sent_msg.message_id,
+                             head or "📩", admin_name, caption=bool(photo))
 
     storage.clear_wizard(chat)
     await msg.reply_text(
@@ -1451,7 +1505,8 @@ async def _finish_user_search(update, context, w: dict):
     if not msg.text or not msg.text.strip():
         await msg.reply_text(T.WIZ_NEED_TEXT)
         return
-    results = storage.find_users(msg.text or "")
+    results = [u for u in storage.find_users(msg.text or "")
+               if not storage.is_admin(u.get("uid"))]
     storage.clear_wizard(chat)
     if not results:
         return await msg.reply_text(T.A_USR_SEARCH_EMPTY, reply_markup=K.back_to_panel_kb())
@@ -1494,14 +1549,22 @@ async def _finish_user_ban(update, context, w: dict):
     if not u:
         storage.clear_wizard(chat)
         return await msg.reply_text(T.A_USR_NOT_FOUND)
+    if config.OWNER_ID is not None and uid == config.OWNER_ID:
+        storage.clear_wizard(chat)
+        return await msg.reply_text(T.A_ONLY_OWNER)
     reason = (msg.text or "").strip()
     if not reason:
         return await msg.reply_text(T.WIZ_NEED_TEXT)
+    was_admin = storage.is_admin(uid)
     storage.ban_user(uid, reason, by=str(msg.from_user.id))
+    if was_admin:
+        # باندکردنی ئادمین = لابردن لە ئادمین + باندکردنی هەژمارەکەی
+        storage.remove_admin(uid)
     storage.clear_wizard(chat)   # فلۆوی ئادمین
     storage.clear_wizard(uid)    # هەر ویزاردێکی چالاکى بەکارهێنەرەکە بوەستێت
     name = st.trunc(u.get("name") or "—", 30)
-    await msg.reply_text(T.BAN_DONE.format(name=name),
+    done = T.ADMIN_BAN_DONE if was_admin else T.BAN_DONE
+    await msg.reply_text(done.format(name=name),
                          reply_markup=K.back_to_panel_kb())
     # ئاگادارکردنەوەی ڕاستەوخۆی بەکارهێنەرەکە بە هۆکارەکەوە
     try:
@@ -1545,6 +1608,61 @@ async def cb_user_del_ok(query, context, uid_raw: str):
     storage.delete_user(uid)
     await handlers_user.alert(query, T.DEL_USER_DONE.format(name=name))
     await cb_users(query, context)
+
+
+# ---------------- بەڕێوەبردنی ئادمینەکان: باندکردن و سڕینەوە ----------------
+
+async def start_admin_ban(query, context, uid_raw: str):
+    """باندکردنی ئادمین لە بەشی ئادمینەکان — هۆکار داوا دەکات و لە ئادمین لابردرێت."""
+    storage = _storage(context)
+    uid = st.to_int(uid_raw)
+    if uid is None:
+        return
+    if config.OWNER_ID is not None and uid == config.OWNER_ID:
+        return await handlers_user.alert(query, T.A_ONLY_OWNER)
+    u = storage.get_user(uid)
+    if not u:
+        return await handlers_user.alert(query, T.A_USR_NOT_FOUND)
+    if storage.is_banned(uid):
+        return await handlers_user.alert(query, T.A_USR_ALREADY_BANNED)
+    chat = query.message.chat_id
+    storage.set_wizard(chat, {"flow": "usrban", "step": "reason",
+                              "data": {"uid": uid,
+                                       "name": u.get("name") or str(uid)}})
+    text = T.WIZ_BAN_REASON.format(
+        name=st.trunc(u.get("name") or str(uid), 30))
+    await handlers_user.edit_message(query, text, K.wiz_cancel_kb())
+
+
+async def cb_admin_delete(query, context, uid_raw: str):
+    """دڵنیایی لە سڕینەوەی هەژماری ئادمین (لابردن لە ئادمین + سڕینەوەی زانیارییەکان)."""
+    storage = _storage(context)
+    uid = st.to_int(uid_raw)
+    if uid is None:
+        return
+    if config.OWNER_ID is not None and uid == config.OWNER_ID:
+        return await handlers_user.alert(query, T.A_ONLY_OWNER)
+    u = storage.get_user(uid)
+    name = st.trunc((u or {}).get("name") or str(uid), 30)
+    await handlers_user.edit_message(
+        query, T.CONFIRM_DEL_ADMIN.format(name=name),
+        K.admin_del_confirm_kb(uid))
+
+
+async def cb_admin_delete_ok(query, context, uid_raw: str):
+    storage = _storage(context)
+    uid = st.to_int(uid_raw)
+    if uid is None:
+        return
+    if config.OWNER_ID is not None and uid == config.OWNER_ID:
+        return await handlers_user.alert(query, T.A_ONLY_OWNER)
+    u = storage.get_user(uid)
+    name = st.trunc((u or {}).get("name") or str(uid), 30)
+    storage.remove_admin(uid)
+    storage.clear_wizard(uid)
+    storage.delete_user(uid)
+    await handlers_user.alert(query, T.DEL_USER_DONE.format(name=name))
+    await cb_admins(query, context)
 
 
 # ============================================================================
@@ -1901,6 +2019,8 @@ async def cb_bcast(query, context, data: str):
         text = d.get("text") or ""
         photo = d.get("photo")
         users = storage.users_sorted()
+        admin_name = (query.from_user.first_name or "ئادمین").strip()
+        sent_list = []
         ok_n = fail_n = 0
         BATCH = 20
         for i in range(0, len(users), BATCH):
@@ -1909,20 +2029,41 @@ async def cb_bcast(query, context, data: str):
             async def _send_one(u):
                 try:
                     if photo:
-                        await fmt.send_photo_html(context.bot, u.get("uid"), photo,
-                                                  text or None)
+                        m = await fmt.send_photo_html(context.bot, u.get("uid"), photo,
+                                                      text or None)
                     else:
-                        await context.bot.send_message(u.get("uid"), text)
+                        m = await context.bot.send_message(u.get("uid"), text)
+                    if m is not None:
+                        sent_list.append((u.get("uid"), m.message_id))
                     return True
                 except Exception:
                     return False
 
-            import asyncio
             results = await asyncio.gather(*[_send_one(u) for u in batch])
             ok_n += sum(1 for r in results if r)
             fail_n += sum(1 for r in results if not r)
             if i + BATCH < len(users):
                 await asyncio.sleep(1.0)
+
+        # پاش ٢ چرکە ناوی ئادمین لە خوارەوەی هەموو نامەکان دەنووسرێت
+        async def _sign_all():
+            await asyncio.sleep(2.0)
+            for cid, mid in sent_list:
+                try:
+                    if photo:
+                        cap = (text or "") + T.ADMIN_SIGN_BCAST.format(name=admin_name)
+                        await context.bot.edit_message_caption(
+                            chat_id=cid, message_id=mid, caption=cap,
+                            parse_mode="HTML")
+                    else:
+                        await context.bot.edit_message_text(
+                            chat_id=cid, message_id=mid,
+                            text=text + T.ADMIN_SIGN_BCAST.format(name=admin_name))
+                except Exception:
+                    pass
+        if sent_list:
+            asyncio.create_task(_sign_all())
+
         out = T.BCAST_DONE.format(ok=st.knum(ok_n))
         if fail_n:
             out += "\n" + T.BCAST_FAIL.format(fail=st.knum(fail_n))

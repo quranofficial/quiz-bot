@@ -154,8 +154,9 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await msg.reply_text(T.REG_NAME)
         return
     profile = storage.get_user(user.id) or {}
-    if not profile.get("name") or profile.get("teacher") is None:
-        # تۆمارکردن ناتەواوە — دووبارە بەردەوام بە
+    if not profile.get("name") or (profile.get("teacher") is None
+                                   and not storage.is_admin(user.id)):
+        # تۆمارکردن ناتەواوە — دووبارە بەردەوام بە (ئادمین: تەنها ناو پێویستە)
         storage.set_wizard(update.effective_chat.id,
                            {"flow": "reg", "step": "name",
                             "data": {"name": profile.get("name") or "",
@@ -886,6 +887,23 @@ async def route_reg(update: Update, context: ContextTypes.DEFAULT_TYPE, w: dict)
             await msg.reply_text(T.REG_NAME_ERR)
             return True
         w.setdefault("data", {})["name"] = st.trunc(name, 40)
+        # ئادمین: تەنها ناو — پرسیاری قوتابی مامۆستا ناکرێت
+        if storage.is_admin(msg.from_user.id):
+            user = msg.from_user
+            old = storage.get_user(user.id) or {}
+            storage.save_user(user.id, {
+                "name": w["data"]["name"],
+                "teacher": old.get("teacher"),
+                "username": ("@" + user.username) if user.username else "",
+                "joined": old.get("joined") or int(time.time()),
+                "stats": old.get("stats") or {},
+                "flashcards": old.get("flashcards") or [],
+                "last_quiz": old.get("last_quiz"),
+            })
+            storage.clear_wizard(chat)
+            await msg.reply_text(T.REG_DONE.format(name=w["data"]["name"]),
+                                 reply_markup=_main_menu(storage, user))
+            return True
         w["step"] = "teacher"
         storage.set_wizard(chat, w)
         await msg.reply_text(

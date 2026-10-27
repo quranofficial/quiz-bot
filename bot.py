@@ -348,6 +348,12 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return await handlers_admin.start_add_admin(q, context)
         if data.startswith("admdel:"):
             return await handlers_admin.remove_admin(q, context, data[7:])
+        if data.startswith("admdeleteok:"):
+            return await handlers_admin.cb_admin_delete_ok(q, context, data[12:])
+        if data.startswith("admdelete:"):
+            return await handlers_admin.cb_admin_delete(q, context, data[10:])
+        if data.startswith("admban:"):
+            return await handlers_admin.start_admin_ban(q, context, data[7:])
 
         if data.startswith("amqdelok:"):
             return await handlers_admin.confirm_delete_question(q, context, data[9:])
