@@ -68,8 +68,22 @@ async def _post_init(app: Application) -> None:
         import handlers_admin
         for aid in storage.all_admin_ids():
             await handlers_admin.ensure_admin_commands(app.bot, aid)
+    # گەرمکردنەوەی OCR ی کوردی سۆرانی — kur_ara.traineddata لە پاش-پلاست دادەگیرێت
+    # (جارێک بۆ هەر دانیشتێک؛ یەکەم هێنان بەم هۆیە خێرا دەبێت)
+    import threading
+    threading.Thread(target=_warm_kur_ara, daemon=True).start()
     log.info("بۆت ئامادەیە ✅ (protect_content=ON بۆ بەکارهێنەران / OFF بۆ ئادمین, "
              "concurrent_updates=ON)")
+
+
+def _warm_kur_ara() -> None:
+    """دایەزراندنی پاش-پلاستی kur_ara بۆ OCR — هیچ شتێک ناشکێنێت ئەگەر سەرکەوتوو نەبێت."""
+    try:
+        import pdfimport
+        ok = pdfimport._ensure_kur_ara()
+        log.info("kur_ara OCR ئامادە: %s", ok)
+    except Exception as e:
+        log.warning("kur_ara warm-up: %s", e)
 
 
 async def _error(update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -92,7 +106,9 @@ async def _error(update, context: ContextTypes.DEFAULT_TYPE) -> None:
 # ئەو ڕێگاکانی Bot کە پەیام دەنێرن — هەموویان protect_content یان هەیە
 _PROTECT_METHODS = ("send_message", "send_photo", "send_document", "send_video",
                     "send_animation", "send_audio", "send_voice", "send_video_note",
-                    "send_sticker", "send_media_group")
+                    "send_sticker", "send_media_group", "send_poll", "send_location",
+                    "send_contact", "send_venue", "send_invoice", "send_game",
+                    "send_dice", "copy_message")
 
 
 def exempt_admin_sends(app: Application, storage: Storage) -> None:

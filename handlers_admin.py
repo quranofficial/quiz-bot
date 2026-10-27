@@ -76,12 +76,12 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await ensure_admin_commands(context.bot, user.id)
         context.bot_data["cmds_set_{}".format(user.id)] = True
     await msg.reply_text(
-        T.ADMIN_HOME.format(users=st.knum(storage.count_users(exclude_admins=True)),
+        T.ADMIN_HOME.format(users=st.knum(storage.count_users()),
                             tickets=st.knum(storage.count_open_tickets()),
                             reports=st.knum(storage.count_open_reports())),
         reply_markup=K.admin_main(storage.count_open_tickets(),
                                   storage.count_open_reports(),
-                                  storage.count_users(exclude_admins=True),
+                                  storage.count_users(),
                                   storage.count_pending_questions()))
 
 
@@ -117,12 +117,12 @@ async def cb_home(query, context):
     storage = _storage(context)
     await handlers_user.edit_message(
         query,
-        T.ADMIN_HOME.format(users=st.knum(storage.count_users(exclude_admins=True)),
+        T.ADMIN_HOME.format(users=st.knum(storage.count_users()),
                             tickets=st.knum(storage.count_open_tickets()),
                             reports=st.knum(storage.count_open_reports())),
         K.admin_main(storage.count_open_tickets(),
                      storage.count_open_reports(),
-                     storage.count_users(exclude_admins=True),
+                     storage.count_users(),
                      storage.count_pending_questions()))
 
 
@@ -1580,9 +1580,9 @@ def _user_row(u: dict) -> str:
 
 async def cb_users(query, context, page: int = 1):
     storage = _storage(context)
-    # ئادمینەکان لە لیستی بەکارهێنەران نایان — تەنها لە بەشی ئادمینەکان
-    users = [u for u in storage.users_sorted()
-             if not storage.is_admin(u.get("uid"))]
+    # هەموو بەکارهێنەرانی تۆمارکراو پیشان دەدرێت — ژمارەکە لە هەموو شوێنێکدا یەکسانە
+    # (پانێڵ، دوگمە، لیست، ئامار، نامەی گشتی = هەمووی count_users())
+    users = storage.users_sorted()
     if not users:
         return await handlers_user.alert(query, T.A_USR_EMPTY, K.back_to_panel_kb())
     total = len(users)
@@ -1731,8 +1731,7 @@ async def _finish_user_search(update, context, w: dict):
     if not msg.text or not msg.text.strip():
         await msg.reply_text(T.WIZ_NEED_TEXT)
         return
-    results = [u for u in storage.find_users(msg.text or "")
-               if not storage.is_admin(u.get("uid"))]
+    results = storage.find_users(msg.text or "")
     storage.clear_wizard(chat)
     if not results:
         return await msg.reply_text(T.A_USR_SEARCH_EMPTY, reply_markup=K.back_to_panel_kb())
@@ -1741,8 +1740,10 @@ async def _finish_user_search(update, context, w: dict):
                    "usr:view:{}".format(u.get("uid")))] for u in results[:20]]
     rows.append([K.btn(T.A_BTN_BACK_PANEL, "adm")])
     from telegram import InlineKeyboardMarkup
+    students, others = storage.count_teacher_users()
     await msg.reply_text(T.A_USR_TITLE.format(
-        n=st.knum(len(results)), p=st.knum(1), pp=st.knum(1)),
+        n=st.knum(len(results)), t=st.knum(students), nt=st.knum(others),
+        p=st.knum(1), pp=st.knum(1)),
         reply_markup=InlineKeyboardMarkup(rows))
 
 

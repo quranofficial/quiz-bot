@@ -726,8 +726,8 @@ class Storage:
     def users_sorted(self) -> List[dict]:
         """هەموو بەکارهێنەران بە دوایین چالاکی (یان بەیەکەوەبوون)."""
         out = list(self._db["users"].values())
-        out.sort(key=lambda u: max(u.get("stats", {}).get("last_quiz_at", 0),
-                                   u.get("joined", 0)), reverse=True)
+        out.sort(key=lambda u: max((u.get("stats") or {}).get("last_quiz_at") or 0,
+                                   u.get("joined") or 0), reverse=True)
         return out
 
     def set_last_quiz(self, uid, info: dict):
