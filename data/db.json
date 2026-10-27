@@ -1037,7 +1037,7 @@
     "q2dc035ed",
     "q45978eb3"
    ],
-   "idx": 17,
+   "idx": 23,
    "answers": [
     {
      "qid": "q0f93726b",
@@ -1174,6 +1174,54 @@
      "chosen": "C) دەمار و پۆشەر",
      "right": "C) دەمار و پۆشەر",
      "has_image": false
+    },
+    {
+     "qid": "q07dd945e",
+     "correct": true,
+     "qtext": "چینی دەرەکی پێست لە کام جۆر خانە پێکهاتووە؟",
+     "chosen": "C) تەخت و مردوو",
+     "right": "C) تەخت و مردوو",
+     "has_image": false
+    },
+    {
+     "qid": "q462caebb",
+     "correct": true,
+     "qtext": "کام کۆئەندام پاشەڕۆ لە لەش دەردەکات و هاوسەنگی ئاو و کیمیکە ماددەکان دەپارێزێت؟",
+     "chosen": "C) زاوزێ",
+     "right": "C) زاوزێ",
+     "has_image": false
+    },
+    {
+     "qid": "q090342db",
+     "correct": false,
+     "qtext": "Test",
+     "chosen": "C) C.5",
+     "right": "D) D. All Correct",
+     "has_image": false
+    },
+    {
+     "qid": "q224c9b7f",
+     "correct": true,
+     "qtext": "شانە بریتییە لە:",
+     "chosen": "C) چەند ئەندامێکی جیاواز",
+     "right": "C) چەند ئەندامێکی جیاواز",
+     "has_image": false
+    },
+    {
+     "qid": "qfa1134c1",
+     "correct": true,
+     "qtext": "کام کۆئەندام ئۆکسجین بە دوانۆکسیدی کاربۆن ئاڵوگۆڕ دەکات؟",
+     "chosen": "C) هەرس",
+     "right": "C) هەرس",
+     "has_image": false
+    },
+    {
+     "qid": "q14cca15d",
+     "correct": true,
+     "qtext": "کام لەمانە جۆرێکی بەستەرە شانە نییە؟",
+     "chosen": "C) خوێن",
+     "right": "C) خوێن",
+     "has_image": false
     }
    ],
    "ts": 1793120749.8388314,
@@ -1194,6 +1242,6 @@
   }
  },
  "meta": {
-  "updated_at": 1793120782
+  "updated_at": 1793120792
  }
 }
