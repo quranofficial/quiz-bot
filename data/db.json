@@ -202,6 +202,13 @@
     "ts": 1793046897
    },
    "uid": 8634363348
+  },
+  "7400338395": {
+   "name": "Mazn sherwani",
+   "teacher": null,
+   "username": "",
+   "joined": 1793109880,
+   "uid": 7400338395
   }
  },
  "tickets": {},
@@ -209,8 +216,14 @@
  "inbox": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "7400338395": {
+   "flow": "reg",
+   "step": "name",
+   "data": {}
+  }
+ },
  "meta": {
-  "updated_at": 1793107687
+  "updated_at": 1793109880
  }
 }
