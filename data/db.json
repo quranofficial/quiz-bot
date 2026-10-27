@@ -261,9 +261,21 @@
     "sel": [],
     "path": []
    }
+  },
+  "1373569356": {
+   "flow": "impfile",
+   "step": "file",
+   "data": {
+    "path": [
+     "f_sample_sec",
+     "fbbd948eb"
+    ],
+    "folder_id": "fbbd948eb",
+    "folder_title": "کەرتی سێیەم"
+   }
   }
  },
  "meta": {
-  "updated_at": 1793120370
+  "updated_at": 1793120382
  }
 }
