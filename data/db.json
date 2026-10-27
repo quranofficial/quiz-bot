@@ -75,45 +75,6 @@
        ]
       }
      ]
-    },
-    {
-     "id": "f8aa9a49a",
-     "type": "folder",
-     "title": "کەرتی سێیەم",
-     "children": [
-      {
-       "id": "q24e8eab8",
-       "type": "question",
-       "text": "کام له مانهBinal) 5 © © ©0 5",
-       "image": null,
-       "options": [
-        {
-         "text": "زؤربدی کیسکدکان راستهوخؤ به شیوه‌یSaid ره‌ق دروست بوون ل 9 و",
-         "correct": true
-        },
-        {
-         "text": "هه‌ندیک له ئیسکه‌کان به کرداری دروستبوونیhh’ تییه‌ریون ت",
-         "correct": false
-        }
-       ]
-      },
-      {
-       "id": "qd9e8bfe2",
-       "type": "question",
-       "text": "جیاوازی نیوانgay Sul وSuid ئیسفه‌نجی نه‌وهیه کهSud بتهوWS 5 = - /مؤخی زدردیSui تیدایه 8 .مؤخی سووریSud تیدایه | © ©© 5 C)",
-       "image": null,
-       "options": [
-        {
-         "text": "جؤکدی هافهرسی تیدایهA+",
-         "correct": true
-        },
-        {
-         "text": "-)هه‌ردووکیان راستن",
-         "correct": false
-        }
-       ]
-      }
-     ]
     }
    ]
   },
@@ -272,6 +233,6 @@
  "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793111109
+  "updated_at": 1793111124
  }
 }
