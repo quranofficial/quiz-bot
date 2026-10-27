@@ -82,24 +82,7 @@
    "id": "f01998251",
    "type": "folder",
    "title": "بەندی دووەم",
-   "children": [
-    {
-     "id": "q8a585cf3",
-     "type": "question",
-     "text": "7 خاڵی جیبه‌ستن 7 )3 ]",
-     "image": null,
-     "options": [
-      {
-       "text": "ڕەنوسی 2 نێوانە ماددەی ڕەقە.5 هەموویان راستن 5 ع",
-       "correct": false
-      },
-      {
-       "text": "رب",
-       "correct": false
-      }
-     ]
-    }
-   ]
+   "children": []
   },
   {
    "id": "f6446fd71",
@@ -255,6 +238,6 @@
  "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793114943
+  "updated_at": 1793114947
  }
 }
