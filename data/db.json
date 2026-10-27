@@ -82,7 +82,752 @@
      "id": "fbbd948eb",
      "type": "folder",
      "title": "کەرتی سێیەم",
-     "children": []
+     "children": [
+      {
+       "id": "q398ba98b",
+       "type": "question",
+       "text": "ڕیزبەندی ڕاستی ڕێکخستنی لەش لە بچووکترەوە بۆ گەورەتر کامەیە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "خانە ← ئەندام ← شانە ← کۆئەندام",
+         "correct": false
+        },
+        {
+         "text": "شانە ← خانە ← ئەندام ← کۆئەندام",
+         "correct": false
+        },
+        {
+         "text": "خانە ← شانە ← ئەندام ← کۆئەندام",
+         "correct": true
+        },
+        {
+         "text": "خانە ← شانە ← کۆئەندام ← ئەندام",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q224c9b7f",
+       "type": "question",
+       "text": "شانە بریتییە لە:",
+       "image": null,
+       "options": [
+        {
+         "text": "چەند کۆئەندامێک کە پێکەوە کار دەکەن",
+         "correct": false
+        },
+        {
+         "text": "کۆمەڵێک خانەی هاوشێوە کە فرمانێکی دیاریکراو بەجێدەهێنن",
+         "correct": false
+        },
+        {
+         "text": "چەند ئەندامێکی جیاواز",
+         "correct": true
+        },
+        {
+         "text": "بچووکترین یەکەی زیندەوەر",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "qcec55d52",
+       "type": "question",
+       "text": "لەشی مرۆڤ لە چەند جۆر شانەی سەرەکی پێکهاتووە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "3",
+         "correct": false
+        },
+        {
+         "text": "4",
+         "correct": false
+        },
+        {
+         "text": "5",
+         "correct": true
+        },
+        {
+         "text": "6",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q4e43fb88",
+       "type": "question",
+       "text": "کامیان گەورەترین ئاستی ڕێکخستنە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "خانە",
+         "correct": false
+        },
+        {
+         "text": "شانە",
+         "correct": false
+        },
+        {
+         "text": "ئەندام",
+         "correct": true
+        },
+        {
+         "text": "تەواوکاری کۆئەندام",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q5a5b790c",
+       "type": "question",
+       "text": "کام لەمانە جۆرێکی ماسولکە شانە نییە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "پەیکەرە",
+         "correct": false
+        },
+        {
+         "text": "لووسە",
+         "correct": false
+        },
+        {
+         "text": "ڕووکەشە",
+         "correct": true
+        },
+        {
+         "text": "دڵە",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "qba72c758",
+       "type": "question",
+       "text": "کام ماسولکە ئێسکەکانی قەدو پەلەکان و ڕوو دەجوڵێنێت؟",
+       "image": null,
+       "options": [
+        {
+         "text": "پەیکەرە",
+         "correct": false
+        },
+        {
+         "text": "لووسە",
+         "correct": false
+        },
+        {
+         "text": "دڵە",
+         "correct": true
+        },
+        {
+         "text": "هیچیان",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q45978eb3",
+       "type": "question",
+       "text": "گواستنەوەی خۆراک بەناو کۆئەندامی هەرسدا کاری کام ماسولکەیە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "پەیکەرە",
+         "correct": false
+        },
+        {
+         "text": "لووسە",
+         "correct": false
+        },
+        {
+         "text": "دڵە",
+         "correct": true
+        },
+        {
+         "text": "هەموویان",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "qb68cd5e5",
+       "type": "question",
+       "text": "کام ماسولکە هێزی پاڵنانی خوێنی هەیە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "پەیکەرە",
+         "correct": false
+        },
+        {
+         "text": "لووسە",
+         "correct": false
+        },
+        {
+         "text": "ڕووکەشە",
+         "correct": true
+        },
+        {
+         "text": "دڵە",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q46251c15",
+       "type": "question",
+       "text": "خانەی دەمارەشانە ناودەبرێت بە:",
+       "image": null,
+       "options": [
+        {
+         "text": "دەمارەخانە",
+         "correct": false
+        },
+        {
+         "text": "ئێسکەخانە",
+         "correct": false
+        },
+        {
+         "text": "پەیکەرەخانە",
+         "correct": true
+        },
+        {
+         "text": "خرۆکەی سپی",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q37d8fd59",
+       "type": "question",
+       "text": "دەمارەشانە لە کام ئەندامانە پێکهاتووە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "گەدە، دڵ و سییەکان",
+         "correct": false
+        },
+        {
+         "text": "ئێسک، کرکراگە و ژێ",
+         "correct": false
+        },
+        {
+         "text": "پێست، موو و نینۆک",
+         "correct": true
+        },
+        {
+         "text": "دەماخ، دڕکەپەتک و دەمارەکان",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q231f45cd",
+       "type": "question",
+       "text": "کام لەمانە فرمانی دەمارەشانە نییە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "گواستنەوەی دەمارە ڕاگەیاندن",
+         "correct": false
+        },
+        {
+         "text": "ڕێکخستنی چالاکییە خۆویستەکان و خۆنەویستەکان",
+         "correct": false
+        },
+        {
+         "text": "دەردانی لینجە ماددە بۆ گرتنی وردیلەکان",
+         "correct": true
+        },
+        {
+         "text": "وەرگرتنی کارتێکەرەکان",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q33553d71",
+       "type": "question",
+       "text": "فرمانی ڕووکەشە شانە چییە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "ئێسک دروست دەکات",
+         "correct": false
+        },
+        {
+         "text": "ڕووی ناوەکی و دەرەکییەکانی لەش دادەپۆشێت",
+         "correct": false
+        },
+        {
+         "text": "گرژبوون و خاوبوونەوە",
+         "correct": true
+        },
+        {
+         "text": "گواستنەوەی دەمارە ڕاگەیاندن",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q28258ee7",
+       "type": "question",
+       "text": "ڕووکەشە شانەی ناوپۆشی لوولەکانی خوێن لە چەند چین خانە پێکهاتووە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "یەک چین",
+         "correct": false
+        },
+        {
+         "text": "دوو چین",
+         "correct": false
+        },
+        {
+         "text": "سێ چین",
+         "correct": true
+        },
+        {
+         "text": "چەندین چین",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "qc28e9acf",
+       "type": "question",
+       "text": "کام لەمانە نموونە نییە بۆ ڕووکەشە شانە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "ناوپۆشی لوولەکانی خوێن",
+         "correct": false
+        },
+        {
+         "text": "ناوپۆشی بۆری هەوا",
+         "correct": false
+        },
+        {
+         "text": "چینی دەرەکی پێست",
+         "correct": true
+        },
+        {
+         "text": "ئێسک",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q07dd945e",
+       "type": "question",
+       "text": "چینی دەرەکی پێست لە کام جۆر خانە پێکهاتووە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "کوڵکدار",
+         "correct": false
+        },
+        {
+         "text": "تەخت و زیندوو",
+         "correct": false
+        },
+        {
+         "text": "تەخت و مردوو",
+         "correct": true
+        },
+        {
+         "text": "درێژ و دەمارەیی",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q84294ba4",
+       "type": "question",
+       "text": "فرمانی بەستەرە شانە چییە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "پێکهاتەکانی لەش پێکەوە دەبەستێتەوە و پاڵپشتی و پارێزگاری ئەندامەکان دەکات",
+         "correct": false
+        },
+        {
+         "text": "گرژبوون و خاوبوونەوە",
+         "correct": false
+        },
+        {
+         "text": "دەردانی لینجە ماددە",
+         "correct": true
+        },
+        {
+         "text": "وەرگرتنی کارتێکەرەکان",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q4bc86860",
+       "type": "question",
+       "text": "نیوانە ماددە بریتییە لە:",
+       "image": null,
+       "options": [
+        {
+         "text": "خانەی مردوو",
+         "correct": false
+        },
+        {
+         "text": "ئەو ماددەیەی دەوری خانەکان دەدات و هێز و جێگری و شێوە دەدات بە بەستەرە شانە",
+         "correct": false
+        },
+        {
+         "text": "شلەی ناو خانە",
+         "correct": true
+        },
+        {
+         "text": "پێستی دەرەوە",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q14cca15d",
+       "type": "question",
+       "text": "کام لەمانە جۆرێکی بەستەرە شانە نییە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "ئێسک",
+         "correct": false
+        },
+        {
+         "text": "کرکراگە",
+         "correct": false
+        },
+        {
+         "text": "خوێن",
+         "correct": true
+        },
+        {
+         "text": "ماسولکەی لووسە",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "qeca9430f",
+       "type": "question",
+       "text": "خانەکانی خوێن لە کام جۆر نیوانە ماددەدا دەجوڵێن؟",
+       "image": null,
+       "options": [
+        {
+         "text": "ڕەقی کریستاڵی",
+         "correct": false
+        },
+        {
+         "text": "نیمچە ڕەق",
+         "correct": false
+        },
+        {
+         "text": "شلی (پلازما)",
+         "correct": true
+        },
+        {
+         "text": "هیچیان",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q6a76fefb",
+       "type": "question",
+       "text": "ئەندام بریتییە لە:",
+       "image": null,
+       "options": [
+        {
+         "text": "چەند شانەی جۆراوجۆر کە پێکەوە فرمانێکی دیاریکراو بەجێدەهێنن",
+         "correct": false
+        },
+        {
+         "text": "کۆمەڵێک خانەی هاوشێوە",
+         "correct": false
+        },
+        {
+         "text": "چەند کۆئەندامێک",
+         "correct": true
+        },
+        {
+         "text": "بچووکترین یەکەی لەش",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q82f4febc",
+       "type": "question",
+       "text": "گەدە لە چەند جۆر شانەی سەرەکی پێکهاتووە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "یەک",
+         "correct": false
+        },
+        {
+         "text": "دوو",
+         "correct": false
+        },
+        {
+         "text": "سێ",
+         "correct": true
+        },
+        {
+         "text": "چوار",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q80cb1cf0",
+       "type": "question",
+       "text": "کام لەمانە ئەندامی کۆئەندامی هەرس نییە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "دڵ",
+         "correct": false
+        },
+        {
+         "text": "گەدە",
+         "correct": false
+        },
+        {
+         "text": "جگەر",
+         "correct": true
+        },
+        {
+         "text": "پەنکریاس",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q4760d69a",
+       "type": "question",
+       "text": "ئامانجی کۆئەندامی هەرس چییە؟",
+       "image": null,
+       "options": [
+        {
+         "text": "دەرکردنی پاشەڕۆ",
+         "correct": false
+        },
+        {
+         "text": "تێکشکاندنی خۆراک بۆ ئەوەی لەش بتوانێت بۆ بەرهەمهێنانی وزە بەکاری بهێنێت",
+         "correct": false
+        },
+        {
+         "text": "گواستنەوەی خوێن",
+         "correct": true
+        },
+        {
+         "text": "هەناسەدان",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q3bd127d0",
+       "type": "question",
+       "text": "پێست، موو و نینۆک پێکهاتەی کام کۆئەندامن؟",
+       "image": null,
+       "options": [
+        {
+         "text": "هەرس",
+         "correct": false
+        },
+        {
+         "text": "سوڕان",
+         "correct": false
+        },
+        {
+         "text": "پۆشەر",
+         "correct": true
+        },
+        {
+         "text": "دەمار",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q512edb90",
+       "type": "question",
+       "text": "کام کۆئەندام شێوە بە لەش دەبەخشێت و ئەندامەکانی ناوەوە دەپارێزێت؟",
+       "image": null,
+       "options": [
+        {
+         "text": "پەیکەر",
+         "correct": false
+        },
+        {
+         "text": "ماسولکە",
+         "correct": false
+        },
+        {
+         "text": "دەمار",
+         "correct": true
+        },
+        {
+         "text": "پۆشەر",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "qfa1134c1",
+       "type": "question",
+       "text": "کام کۆئەندام ئۆکسجین بە دوانۆکسیدی کاربۆن ئاڵوگۆڕ دەکات؟",
+       "image": null,
+       "options": [
+        {
+         "text": "سوڕان",
+         "correct": false
+        },
+        {
+         "text": "هەناسە",
+         "correct": false
+        },
+        {
+         "text": "هەرس",
+         "correct": true
+        },
+        {
+         "text": "دەرهاوێشتن",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q462caebb",
+       "type": "question",
+       "text": "کام کۆئەندام پاشەڕۆ لە لەش دەردەکات و هاوسەنگی ئاو و کیمیکە ماددەکان دەپارێزێت؟",
+       "image": null,
+       "options": [
+        {
+         "text": "هەرس",
+         "correct": false
+        },
+        {
+         "text": "سوڕان",
+         "correct": false
+        },
+        {
+         "text": "زاوزێ",
+         "correct": true
+        },
+        {
+         "text": "دەرهاوێشتن",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "qfc3e6a2f",
+       "type": "question",
+       "text": "کۆئەندامی دەمار لە چ پێکدێت؟",
+       "image": null,
+       "options": [
+        {
+         "text": "گورچیلە و میزەدان",
+         "correct": false
+        },
+        {
+         "text": "دەماخ، دڕکەپەتک، دەمارەکان و هەستە ئەندامەکان",
+         "correct": false
+        },
+        {
+         "text": "دڵ و لوولەکانی خوێن",
+         "correct": true
+        },
+        {
+         "text": "سییەکان و جۆگەکانی هەوا",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q2dc035ed",
+       "type": "question",
+       "text": "کام کۆئەندامەکان پێکەوە کار دەکەن بۆ دابەشکردنی خۆراکی هەرسکراو بەسەر هەموو لەشدا؟",
+       "image": null,
+       "options": [
+        {
+         "text": "هەناسە و دەرهاوێشتن",
+         "correct": false
+        },
+        {
+         "text": "زاوزێ و دەمار",
+         "correct": false
+        },
+        {
+         "text": "هەرس و سوڕان",
+         "correct": true
+        },
+        {
+         "text": "پۆشەر و پەیکەر",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "q4a829bca",
+       "type": "question",
+       "text": "پەنکریاس بەشێکە لە کام دوو کۆئەندام؟",
+       "image": null,
+       "options": [
+        {
+         "text": "هەناسە و سوڕان",
+         "correct": false
+        },
+        {
+         "text": "هەرس و کۆیرە ڕژێنەکان",
+         "correct": false
+        },
+        {
+         "text": "دەمار و پۆشەر",
+         "correct": true
+        },
+        {
+         "text": "زاوزێ و دەرهاوێشتن",
+         "correct": false
+        }
+       ]
+      },
+      {
+       "id": "qa9ff26ae",
+       "type": "question",
+       "text": "جوڵاندنی ئێسک بە کام کۆئەندام دەبێت؟",
+       "image": null,
+       "options": [
+        {
+         "text": "هەناسە",
+         "correct": false
+        },
+        {
+         "text": "هەرس",
+         "correct": false
+        },
+        {
+         "text": "سوڕان",
+         "correct": true
+        },
+        {
+         "text": "ماسولکە",
+         "correct": false
+        }
+       ]
+      }
+     ]
     }
    ]
   },
@@ -261,705 +1006,9 @@
     "sel": [],
     "path": []
    }
-  },
-  "1373569356": {
-   "flow": "impfile",
-   "step": "confirm",
-   "data": {
-    "path": [
-     "f_sample_sec",
-     "fbbd948eb"
-    ],
-    "folder_id": "fbbd948eb",
-    "folder_title": "کەرتی سێیەم",
-    "questions": [
-     {
-      "text": "ڕیزبەندی ڕاستی ڕێکخستنی لەش لە بچووکترەوە بۆ گەورەتر کامەیە؟",
-      "options": [
-       {
-        "text": "خانە ← ئەندام ← شانە ← کۆئەندام",
-        "correct": false
-       },
-       {
-        "text": "شانە ← خانە ← ئەندام ← کۆئەندام",
-        "correct": false
-       },
-       {
-        "text": "خانە ← شانە ← ئەندام ← کۆئەندام",
-        "correct": true
-       },
-       {
-        "text": "خانە ← شانە ← کۆئەندام ← ئەندام",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "شانە بریتییە لە:",
-      "options": [
-       {
-        "text": "چەند کۆئەندامێک کە پێکەوە کار دەکەن",
-        "correct": false
-       },
-       {
-        "text": "کۆمەڵێک خانەی هاوشێوە کە فرمانێکی دیاریکراو بەجێدەهێنن",
-        "correct": false
-       },
-       {
-        "text": "چەند ئەندامێکی جیاواز",
-        "correct": true
-       },
-       {
-        "text": "بچووکترین یەکەی زیندەوەر",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "لەشی مرۆڤ لە چەند جۆر شانەی سەرەکی پێکهاتووە؟",
-      "options": [
-       {
-        "text": "3",
-        "correct": false
-       },
-       {
-        "text": "4",
-        "correct": false
-       },
-       {
-        "text": "5",
-        "correct": true
-       },
-       {
-        "text": "6",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "کامیان گەورەترین ئاستی ڕێکخستنە؟",
-      "options": [
-       {
-        "text": "خانە",
-        "correct": false
-       },
-       {
-        "text": "شانە",
-        "correct": false
-       },
-       {
-        "text": "ئەندام",
-        "correct": true
-       },
-       {
-        "text": "تەواوکاری کۆئەندام",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "کام لەمانە جۆرێکی ماسولکە شانە نییە؟",
-      "options": [
-       {
-        "text": "پەیکەرە",
-        "correct": false
-       },
-       {
-        "text": "لووسە",
-        "correct": false
-       },
-       {
-        "text": "ڕووکەشە",
-        "correct": true
-       },
-       {
-        "text": "دڵە",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "کام ماسولکە ئێسکەکانی قەدو پەلەکان و ڕوو دەجوڵێنێت؟",
-      "options": [
-       {
-        "text": "پەیکەرە",
-        "correct": false
-       },
-       {
-        "text": "لووسە",
-        "correct": false
-       },
-       {
-        "text": "دڵە",
-        "correct": true
-       },
-       {
-        "text": "هیچیان",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "گواستنەوەی خۆراک بەناو کۆئەندامی هەرسدا کاری کام ماسولکەیە؟",
-      "options": [
-       {
-        "text": "پەیکەرە",
-        "correct": false
-       },
-       {
-        "text": "لووسە",
-        "correct": false
-       },
-       {
-        "text": "دڵە",
-        "correct": true
-       },
-       {
-        "text": "هەموویان",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "کام ماسولکە هێزی پاڵنانی خوێنی هەیە؟",
-      "options": [
-       {
-        "text": "پەیکەرە",
-        "correct": false
-       },
-       {
-        "text": "لووسە",
-        "correct": false
-       },
-       {
-        "text": "ڕووکەشە",
-        "correct": true
-       },
-       {
-        "text": "دڵە",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "خانەی دەمارەشانە ناودەبرێت بە:",
-      "options": [
-       {
-        "text": "دەمارەخانە",
-        "correct": false
-       },
-       {
-        "text": "ئێسکەخانە",
-        "correct": false
-       },
-       {
-        "text": "پەیکەرەخانە",
-        "correct": true
-       },
-       {
-        "text": "خرۆکەی سپی",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "دەمارەشانە لە کام ئەندامانە پێکهاتووە؟",
-      "options": [
-       {
-        "text": "گەدە، دڵ و سییەکان",
-        "correct": false
-       },
-       {
-        "text": "ئێسک، کرکراگە و ژێ",
-        "correct": false
-       },
-       {
-        "text": "پێست، موو و نینۆک",
-        "correct": true
-       },
-       {
-        "text": "دەماخ، دڕکەپەتک و دەمارەکان",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "کام لەمانە فرمانی دەمارەشانە نییە؟",
-      "options": [
-       {
-        "text": "گواستنەوەی دەمارە ڕاگەیاندن",
-        "correct": false
-       },
-       {
-        "text": "ڕێکخستنی چالاکییە خۆویستەکان و خۆنەویستەکان",
-        "correct": false
-       },
-       {
-        "text": "دەردانی لینجە ماددە بۆ گرتنی وردیلەکان",
-        "correct": true
-       },
-       {
-        "text": "وەرگرتنی کارتێکەرەکان",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "فرمانی ڕووکەشە شانە چییە؟",
-      "options": [
-       {
-        "text": "ئێسک دروست دەکات",
-        "correct": false
-       },
-       {
-        "text": "ڕووی ناوەکی و دەرەکییەکانی لەش دادەپۆشێت",
-        "correct": false
-       },
-       {
-        "text": "گرژبوون و خاوبوونەوە",
-        "correct": true
-       },
-       {
-        "text": "گواستنەوەی دەمارە ڕاگەیاندن",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "ڕووکەشە شانەی ناوپۆشی لوولەکانی خوێن لە چەند چین خانە پێکهاتووە؟",
-      "options": [
-       {
-        "text": "یەک چین",
-        "correct": false
-       },
-       {
-        "text": "دوو چین",
-        "correct": false
-       },
-       {
-        "text": "سێ چین",
-        "correct": true
-       },
-       {
-        "text": "چەندین چین",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "کام لەمانە نموونە نییە بۆ ڕووکەشە شانە؟",
-      "options": [
-       {
-        "text": "ناوپۆشی لوولەکانی خوێن",
-        "correct": false
-       },
-       {
-        "text": "ناوپۆشی بۆری هەوا",
-        "correct": false
-       },
-       {
-        "text": "چینی دەرەکی پێست",
-        "correct": true
-       },
-       {
-        "text": "ئێسک",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "چینی دەرەکی پێست لە کام جۆر خانە پێکهاتووە؟",
-      "options": [
-       {
-        "text": "کوڵکدار",
-        "correct": false
-       },
-       {
-        "text": "تەخت و زیندوو",
-        "correct": false
-       },
-       {
-        "text": "تەخت و مردوو",
-        "correct": true
-       },
-       {
-        "text": "درێژ و دەمارەیی",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "فرمانی بەستەرە شانە چییە؟",
-      "options": [
-       {
-        "text": "پێکهاتەکانی لەش پێکەوە دەبەستێتەوە و پاڵپشتی و پارێزگاری ئەندامەکان دەکات",
-        "correct": false
-       },
-       {
-        "text": "گرژبوون و خاوبوونەوە",
-        "correct": false
-       },
-       {
-        "text": "دەردانی لینجە ماددە",
-        "correct": true
-       },
-       {
-        "text": "وەرگرتنی کارتێکەرەکان",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "نیوانە ماددە بریتییە لە:",
-      "options": [
-       {
-        "text": "خانەی مردوو",
-        "correct": false
-       },
-       {
-        "text": "ئەو ماددەیەی دەوری خانەکان دەدات و هێز و جێگری و شێوە دەدات بە بەستەرە شانە",
-        "correct": false
-       },
-       {
-        "text": "شلەی ناو خانە",
-        "correct": true
-       },
-       {
-        "text": "پێستی دەرەوە",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "کام لەمانە جۆرێکی بەستەرە شانە نییە؟",
-      "options": [
-       {
-        "text": "ئێسک",
-        "correct": false
-       },
-       {
-        "text": "کرکراگە",
-        "correct": false
-       },
-       {
-        "text": "خوێن",
-        "correct": true
-       },
-       {
-        "text": "ماسولکەی لووسە",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "خانەکانی خوێن لە کام جۆر نیوانە ماددەدا دەجوڵێن؟",
-      "options": [
-       {
-        "text": "ڕەقی کریستاڵی",
-        "correct": false
-       },
-       {
-        "text": "نیمچە ڕەق",
-        "correct": false
-       },
-       {
-        "text": "شلی (پلازما)",
-        "correct": true
-       },
-       {
-        "text": "هیچیان",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "ئەندام بریتییە لە:",
-      "options": [
-       {
-        "text": "چەند شانەی جۆراوجۆر کە پێکەوە فرمانێکی دیاریکراو بەجێدەهێنن",
-        "correct": false
-       },
-       {
-        "text": "کۆمەڵێک خانەی هاوشێوە",
-        "correct": false
-       },
-       {
-        "text": "چەند کۆئەندامێک",
-        "correct": true
-       },
-       {
-        "text": "بچووکترین یەکەی لەش",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "گەدە لە چەند جۆر شانەی سەرەکی پێکهاتووە؟",
-      "options": [
-       {
-        "text": "یەک",
-        "correct": false
-       },
-       {
-        "text": "دوو",
-        "correct": false
-       },
-       {
-        "text": "سێ",
-        "correct": true
-       },
-       {
-        "text": "چوار",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "کام لەمانە ئەندامی کۆئەندامی هەرس نییە؟",
-      "options": [
-       {
-        "text": "دڵ",
-        "correct": false
-       },
-       {
-        "text": "گەدە",
-        "correct": false
-       },
-       {
-        "text": "جگەر",
-        "correct": true
-       },
-       {
-        "text": "پەنکریاس",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "ئامانجی کۆئەندامی هەرس چییە؟",
-      "options": [
-       {
-        "text": "دەرکردنی پاشەڕۆ",
-        "correct": false
-       },
-       {
-        "text": "تێکشکاندنی خۆراک بۆ ئەوەی لەش بتوانێت بۆ بەرهەمهێنانی وزە بەکاری بهێنێت",
-        "correct": false
-       },
-       {
-        "text": "گواستنەوەی خوێن",
-        "correct": true
-       },
-       {
-        "text": "هەناسەدان",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "پێست، موو و نینۆک پێکهاتەی کام کۆئەندامن؟",
-      "options": [
-       {
-        "text": "هەرس",
-        "correct": false
-       },
-       {
-        "text": "سوڕان",
-        "correct": false
-       },
-       {
-        "text": "پۆشەر",
-        "correct": true
-       },
-       {
-        "text": "دەمار",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "کام کۆئەندام شێوە بە لەش دەبەخشێت و ئەندامەکانی ناوەوە دەپارێزێت؟",
-      "options": [
-       {
-        "text": "پەیکەر",
-        "correct": false
-       },
-       {
-        "text": "ماسولکە",
-        "correct": false
-       },
-       {
-        "text": "دەمار",
-        "correct": true
-       },
-       {
-        "text": "پۆشەر",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "کام کۆئەندام ئۆکسجین بە دوانۆکسیدی کاربۆن ئاڵوگۆڕ دەکات؟",
-      "options": [
-       {
-        "text": "سوڕان",
-        "correct": false
-       },
-       {
-        "text": "هەناسە",
-        "correct": false
-       },
-       {
-        "text": "هەرس",
-        "correct": true
-       },
-       {
-        "text": "دەرهاوێشتن",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "کام کۆئەندام پاشەڕۆ لە لەش دەردەکات و هاوسەنگی ئاو و کیمیکە ماددەکان دەپارێزێت؟",
-      "options": [
-       {
-        "text": "هەرس",
-        "correct": false
-       },
-       {
-        "text": "سوڕان",
-        "correct": false
-       },
-       {
-        "text": "زاوزێ",
-        "correct": true
-       },
-       {
-        "text": "دەرهاوێشتن",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "کۆئەندامی دەمار لە چ پێکدێت؟",
-      "options": [
-       {
-        "text": "گورچیلە و میزەدان",
-        "correct": false
-       },
-       {
-        "text": "دەماخ، دڕکەپەتک، دەمارەکان و هەستە ئەندامەکان",
-        "correct": false
-       },
-       {
-        "text": "دڵ و لوولەکانی خوێن",
-        "correct": true
-       },
-       {
-        "text": "سییەکان و جۆگەکانی هەوا",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "کام کۆئەندامەکان پێکەوە کار دەکەن بۆ دابەشکردنی خۆراکی هەرسکراو بەسەر هەموو لەشدا؟",
-      "options": [
-       {
-        "text": "هەناسە و دەرهاوێشتن",
-        "correct": false
-       },
-       {
-        "text": "زاوزێ و دەمار",
-        "correct": false
-       },
-       {
-        "text": "هەرس و سوڕان",
-        "correct": true
-       },
-       {
-        "text": "پۆشەر و پەیکەر",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "پەنکریاس بەشێکە لە کام دوو کۆئەندام؟",
-      "options": [
-       {
-        "text": "هەناسە و سوڕان",
-        "correct": false
-       },
-       {
-        "text": "هەرس و کۆیرە ڕژێنەکان",
-        "correct": false
-       },
-       {
-        "text": "دەمار و پۆشەر",
-        "correct": true
-       },
-       {
-        "text": "زاوزێ و دەرهاوێشتن",
-        "correct": false
-       }
-      ],
-      "answered": true
-     },
-     {
-      "text": "جوڵاندنی ئێسک بە کام کۆئەندام دەبێت؟",
-      "options": [
-       {
-        "text": "هەناسە",
-        "correct": false
-       },
-       {
-        "text": "هەرس",
-        "correct": false
-       },
-       {
-        "text": "سوڕان",
-        "correct": true
-       },
-       {
-        "text": "ماسولکە",
-        "correct": false
-       }
-      ],
-      "answered": true
-     }
-    ]
-   }
   }
  },
  "meta": {
-  "updated_at": 1793120717
+  "updated_at": 1793120727
  }
 }
