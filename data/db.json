@@ -205,14 +205,14 @@
  "sessions": {},
  "wizard": {
   "1373569356": {
-   "flow": "menulabel",
-   "step": "label",
+   "flow": "impfile",
+   "step": "folder",
    "data": {
-    "key": "sections"
+    "path": []
    }
   }
  },
  "meta": {
-  "updated_at": 1793107496
+  "updated_at": 1793107510
  }
 }
