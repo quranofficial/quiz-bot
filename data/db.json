@@ -270,8 +270,19 @@
  "inbox": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "1373569356": {
+   "flow": "pqrev",
+   "step": "go",
+   "data": {
+    "qids": [
+     "q24e8eab8",
+     "qd9e8bfe2"
+    ]
+   }
+  }
+ },
  "meta": {
-  "updated_at": 1793111097
+  "updated_at": 1793111105
  }
 }
