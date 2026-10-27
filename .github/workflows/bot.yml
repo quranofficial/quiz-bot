@@ -35,6 +35,12 @@ jobs:
           python-version: "3.12"
           cache: pip
 
+      - name: Install Tesseract OCR (بۆ هێنانی پرسیار بە وێنە/PDF)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends \
+            tesseract-ocr tesseract-ocr-ara tesseract-ocr-fas tesseract-ocr-eng
+
       - name: Install dependencies
         run: pip install -r requirements.txt
 
