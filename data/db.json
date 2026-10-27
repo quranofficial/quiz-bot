@@ -246,16 +246,18 @@
  "wizard": {
   "1373569356": {
    "flow": "impfile",
-   "step": "folder",
+   "step": "file",
    "data": {
     "path": [
      "f01998251",
      "fc18be343"
-    ]
+    ],
+    "folder_id": "fc18be343",
+    "folder_title": "Test"
    }
   }
  },
  "meta": {
-  "updated_at": 1793115006
+  "updated_at": 1793115009
  }
 }
