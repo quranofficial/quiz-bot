@@ -365,24 +365,8 @@
  "inbox": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "pqrev",
-   "step": "go",
-   "data": {
-    "qids": [
-     "q38711e3d",
-     "qea450f73",
-     "q604f1935",
-     "q35fe0438",
-     "q1137289a",
-     "q01820835",
-     "q8a585cf3"
-    ]
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793114895
+  "updated_at": 1793114902
  }
 }
