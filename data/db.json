@@ -245,8 +245,17 @@
  "inbox": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "8634363348": {
+   "flow": "mq",
+   "step": "sel",
+   "data": {
+    "sel": [],
+    "path": []
+   }
+  }
+ },
  "meta": {
-  "updated_at": 1793115222
+  "updated_at": 1793115242
  }
 }
