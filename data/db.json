@@ -243,8 +243,16 @@
  "inbox": {},
  "events": {},
  "sessions": {},
- "wizard": {},
+ "wizard": {
+  "1373569356": {
+   "flow": "addadmin",
+   "step": "id",
+   "data": {
+    "prompt": 704
+   }
+  }
+ },
  "meta": {
-  "updated_at": 1793115166
+  "updated_at": 1793115183
  }
 }
