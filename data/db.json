@@ -1,6 +1,6 @@
 {
  "settings": {
-  "questions_per_quiz": 0,
+  "questions_per_quiz": 10,
   "teacher_name": "ئارام عبدالرزاق",
   "ticket_seq": 0,
   "report_seq": 1,
@@ -205,6 +205,6 @@
  "sessions": {},
  "wizard": {},
  "meta": {
-  "updated_at": 1793107459
+  "updated_at": 1793107469
  }
 }
