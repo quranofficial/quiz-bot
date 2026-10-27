@@ -1037,7 +1037,7 @@
     "q2dc035ed",
     "q45978eb3"
    ],
-   "idx": 3,
+   "idx": 8,
    "answers": [
     {
      "qid": "q0f93726b",
@@ -1062,6 +1062,46 @@
      "chosen": "D) چەندین چین",
      "right": "C) سێ چین",
      "has_image": false
+    },
+    {
+     "qid": "q84294ba4",
+     "correct": true,
+     "qtext": "فرمانی بەستەرە شانە چییە؟",
+     "chosen": "C) دەردانی لینجە ماددە",
+     "right": "C) دەردانی لینجە ماددە",
+     "has_image": false
+    },
+    {
+     "qid": "q33553d71",
+     "correct": true,
+     "qtext": "فرمانی ڕووکەشە شانە چییە؟",
+     "chosen": "C) گرژبوون و خاوبوونەوە",
+     "right": "C) گرژبوون و خاوبوونەوە",
+     "has_image": false
+    },
+    {
+     "qid": "qba72c758",
+     "correct": true,
+     "qtext": "کام ماسولکە ئێسکەکانی قەدو پەلەکان و ڕوو دەجوڵێنێت؟",
+     "chosen": "C) دڵە",
+     "right": "C) دڵە",
+     "has_image": false
+    },
+    {
+     "qid": "q82f4febc",
+     "correct": true,
+     "qtext": "گەدە لە چەند جۆر شانەی سەرەکی پێکهاتووە؟",
+     "chosen": "C) سێ",
+     "right": "C) سێ",
+     "has_image": false
+    },
+    {
+     "qid": "q3bd127d0",
+     "correct": true,
+     "qtext": "پێست، موو و نینۆک پێکهاتەی کام کۆئەندامن؟",
+     "chosen": "C) پۆشەر",
+     "right": "C) پۆشەر",
+     "has_image": false
     }
    ],
    "ts": 1793120749.8388314,
@@ -1082,6 +1122,6 @@
   }
  },
  "meta": {
-  "updated_at": 1793120755
+  "updated_at": 1793120764
  }
 }
