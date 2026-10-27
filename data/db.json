@@ -3,7 +3,9 @@
   "questions_per_quiz": 0,
   "teacher_name": "ئارام عبدالرزاق",
   "ticket_seq": 0,
-  "report_seq": 1
+  "report_seq": 1,
+  "menu_labels": {},
+  "menu_extra": []
  },
  "admins": [],
  "tree": [
@@ -198,18 +200,11 @@
  },
  "tickets": {},
  "reports": {},
+ "inbox": {},
  "events": {},
  "sessions": {},
- "wizard": {
-  "1373569356": {
-   "flow": "addadmin",
-   "step": "id",
-   "data": {
-    "prompt": 385
-   }
-  }
- },
+ "wizard": {},
  "meta": {
-  "updated_at": 1793053987
+  "updated_at": 1793107346
  }
 }
