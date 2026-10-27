@@ -1037,7 +1037,7 @@
     "q2dc035ed",
     "q45978eb3"
    ],
-   "idx": 8,
+   "idx": 13,
    "answers": [
     {
      "qid": "q0f93726b",
@@ -1102,6 +1102,46 @@
      "chosen": "C) پۆشەر",
      "right": "C) پۆشەر",
      "has_image": false
+    },
+    {
+     "qid": "q4760d69a",
+     "correct": true,
+     "qtext": "ئامانجی کۆئەندامی هەرس چییە؟",
+     "chosen": "C) گواستنەوەی خوێن",
+     "right": "C) گواستنەوەی خوێن",
+     "has_image": false
+    },
+    {
+     "qid": "q398ba98b",
+     "correct": true,
+     "qtext": "ڕیزبەندی ڕاستی ڕێکخستنی لەش لە بچووکترەوە بۆ گەورەتر کامەیە؟",
+     "chosen": "C) خانە ← شانە ← ئەندام ← کۆئەندام",
+     "right": "C) خانە ← شانە ← ئەندام ← کۆئەندام",
+     "has_image": false
+    },
+    {
+     "qid": "q46251c15",
+     "correct": true,
+     "qtext": "خانەی دەمارەشانە ناودەبرێت بە:",
+     "chosen": "C) پەیکەرەخانە",
+     "right": "C) پەیکەرەخانە",
+     "has_image": false
+    },
+    {
+     "qid": "q80cb1cf0",
+     "correct": true,
+     "qtext": "کام لەمانە ئەندامی کۆئەندامی هەرس نییە؟",
+     "chosen": "C) جگەر",
+     "right": "C) جگەر",
+     "has_image": false
+    },
+    {
+     "qid": "q4e43fb88",
+     "correct": true,
+     "qtext": "کامیان گەورەترین ئاستی ڕێکخستنە؟",
+     "chosen": "C) ئەندام",
+     "right": "C) ئەندام",
+     "has_image": false
     }
    ],
    "ts": 1793120749.8388314,
@@ -1122,6 +1162,6 @@
   }
  },
  "meta": {
-  "updated_at": 1793120764
+  "updated_at": 1793120773
  }
 }
