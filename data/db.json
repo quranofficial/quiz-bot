@@ -208,11 +208,13 @@
    "flow": "impfile",
    "step": "folder",
    "data": {
-    "path": []
+    "path": [
+     "f_sample_sec"
+    ]
    }
   }
  },
  "meta": {
-  "updated_at": 1793107510
+  "updated_at": 1793107545
  }
 }
