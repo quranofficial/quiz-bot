@@ -286,16 +286,9 @@
     "sel": [],
     "path": []
    }
-  },
-  "1373569356": {
-   "flow": "menuextra",
-   "step": "page",
-   "data": {
-    "label": "پرسیاری وزاری"
-   }
   }
  },
  "meta": {
-  "updated_at": 1793198775
+  "updated_at": 1793198778
  }
 }
