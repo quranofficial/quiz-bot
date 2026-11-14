@@ -44,19 +44,25 @@ def main_menu(storage, user) -> InlineKeyboardMarkup:
     has_tree = bool(db["tree"])
     has_pages = bool(db["pages"])
     L = lambda k: menu_label(storage, k)
+    # مینیوی سەرەکی: کارە سەرەکییەکان بە گرووپی ڕوون و دوو ستوون
     rows = []
+    learning = []
     if has_tree:
-        rows.append([btn(L("sections"), "nav:root")])
-        rows.append([btn(L("custom"), "mq")])
+        learning.append(btn(L("sections"), "nav:root"))
+        learning.append(btn(L("custom"), "mq"))
     if has_event:
-        rows.append([btn(L("event"), "qn")])
+        learning.append(btn(L("event"), "qn"))
     if has_tree:
-        rows.append([btn(L("ask"), "ask")])
-    rows.append([btn(L("flash"), "fc")])
-    rows.append([btn(L("myq"), "myq"), btn(L("myrp"), "myrp")])
-    rows.append([btn(L("myinbox"), "myinbox"), btn(L("mystats"), "mystats")])
+        learning.append(btn(L("ask"), "ask"))
+    if learning:
+        rows.extend([learning[i:i + 2] for i in range(0, len(learning), 2)])
+
+    tools = [btn(L("flash"), "fc")]
     if has_pages:
-        rows.append([btn(L("pages"), "pgs")])
+        tools.append(btn(L("pages"), "pgs"))
+    rows.append(tools)
+    # ئامار، پرسیارەکان، ڕاپۆرت و نامەکان لە یەک شوێنی هاوبەش
+    rows.append([btn(T.BTN_ACCOUNT, "account")])
     # بەشە زیادکراوەکانی مینیو — هەر یەکێک پەڕەیەکی زانیاری دەکاتەوە
     page_ids = {p.get("id") for p in db["pages"]}
     for ex in storage.menu_extras():
@@ -65,6 +71,16 @@ def main_menu(storage, user) -> InlineKeyboardMarkup:
     if storage.is_admin(user.id):
         rows.append([btn(T.BTN_ADMIN, "adm")])
     return InlineKeyboardMarkup(rows)
+
+
+def account_menu(storage) -> InlineKeyboardMarkup:
+    """یەک شوێن بۆ ئامار و پەیوەندییەکانی بەکارهێنەر."""
+    L = lambda key: menu_label(storage, key)
+    return InlineKeyboardMarkup([
+        [btn(L("mystats"), "mystats"), btn(L("myinbox"), "myinbox")],
+        [btn(L("myq"), "myq"), btn(L("myrp"), "myrp")],
+        [btn(T.BTN_HOME, "home")],
+    ])
 
 
 def home_only() -> InlineKeyboardMarkup:
@@ -304,12 +320,10 @@ def tickets_list_kb(tickets) -> InlineKeyboardMarkup:
 def admin_main(open_tickets: int = 0, open_reports: int = 0,
                users_n: int = 0, pending_n: int = 0) -> InlineKeyboardMarkup:
     rows = [
-        [btn(T.A_BTN_TREE, "am:root")],
-        [btn(T.A_BTN_IMPFILE, "impfile")],
+        [btn(T.A_BTN_TREE, "am:root"), btn(T.A_BTN_IMPFILE, "impfile")],
         [btn(T.A_BTN_TICKETS.format(n=st.knum(open_tickets)), "admtk"),
          btn(T.A_BTN_REPORTS.format(n=st.knum(open_reports)), "admrp")],
-        [btn(T.A_BTN_EVENT, "qnev"),
-         btn(T.A_BTN_BCAST, "bcast")],
+        [btn(T.A_BTN_EVENT, "qnev"), btn(T.A_BTN_BCAST, "bcast")],
         [btn(T.A_BTN_USERS.format(n=st.knum(users_n)), "usr"),
          btn(T.A_BTN_PAGES, "admpgs")],
         [btn(T.A_BTN_MENU, "menu"), btn(T.A_BTN_ADMINS, "admadm")],
