@@ -293,7 +293,7 @@
    ],
    "text": "Ew",
    "photo": null,
-   "status": "open",
+   "status": "closed",
    "created": 1794700075,
    "replies": [],
    "admin_msgs": {
@@ -327,16 +327,9 @@
    "flow": "reg",
    "step": "name",
    "data": {}
-  },
-  "1373569356": {
-   "flow": "tkreply",
-   "step": "msg",
-   "data": {
-    "tid": 1
-   }
   }
  },
  "meta": {
-  "updated_at": 1794700085
+  "updated_at": 1794700090
  }
 }
