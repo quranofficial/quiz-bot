@@ -298,9 +298,18 @@
    "flow": "reg",
    "step": "name",
    "data": {}
+  },
+  "1373569356": {
+   "flow": "ask",
+   "step": "nav",
+   "data": {
+    "path": [],
+    "text": null,
+    "photo": null
+   }
   }
  },
  "meta": {
-  "updated_at": 1794700033
+  "updated_at": 1794700058
  }
 }
