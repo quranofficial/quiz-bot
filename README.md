@@ -249,3 +249,18 @@ telegram-quiz-bot/
 ├── requirements.txt
 └── .github/workflows/bot.yml   # کارکردنی ٢٤ کاتژمێر / ٧ ڕۆژ
 ```
+
+
+---
+
+## 🧪 پشکنینی کۆد و تاقیکردنەوە
+
+بۆ دڵنیابوون لە دروستی گۆڕانکارییەکان، لە کۆمپیتەر یان Codespaces ئەم فەرمانانە جێبەجێ بکە:
+
+```bash
+python -m pip install -r requirements.txt
+python -m compileall -q .
+python -m unittest discover -s tests -v
+```
+
+هەروەها GitHub Actions لە هەر Pull Request ـێکدا کۆدەکان compile دەکات و تاقیکردنەوە یەکەییەکان جێبەجێ دەکات. ئەمە یارمەتی دەدات هەڵەی syntax و شکستی تاقیکردنەوەکان پێش گەیاندنی گۆڕانکارییەکان بدۆزرێنەوە.
