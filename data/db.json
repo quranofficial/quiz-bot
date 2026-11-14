@@ -303,13 +303,16 @@
    "flow": "ask",
    "step": "nav",
    "data": {
-    "path": [],
+    "path": [
+     "f_sample_sec",
+     "f06de57a4"
+    ],
     "text": null,
     "photo": null
    }
   }
  },
  "meta": {
-  "updated_at": 1794700058
+  "updated_at": 1794700065
  }
 }
