@@ -230,6 +230,10 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         if data.startswith("reg:"):
             return await handlers_user.cb_reg(q, context, data[4:])
 
+        # ---------- هەژمار و پەیوەندی ----------
+        if data == "account":
+            return await handlers_user.edit_message(q, T.ACCOUNT_HOME, K.account_menu(storage))
+
         # ---------- پرسیارەکانم / ڕاپۆرتەکانم / نامە هاتووەکان (لای بەکارهێنەر) ----------
         if data == "myq":
             return await handlers_user.cb_myq(q, context)
