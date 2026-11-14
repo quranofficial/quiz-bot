@@ -2,7 +2,7 @@
  "settings": {
   "questions_per_quiz": 10,
   "teacher_name": "ئارام عبدالرزاق",
-  "ticket_seq": 0,
+  "ticket_seq": 1,
   "report_seq": 1,
   "menu_labels": {},
   "menu_extra": []
@@ -280,7 +280,36 @@
    "uid": 5618135834
   }
  },
- "tickets": {},
+ "tickets": {
+  "1": {
+   "id": 1,
+   "uid": 1373569356,
+   "name": "Ismahil",
+   "username": "@ismahil_312",
+   "teacher": true,
+   "path": [
+    "بەندی یەکەم",
+    "کەرتی یەکەم"
+   ],
+   "text": "Ew",
+   "photo": null,
+   "status": "open",
+   "created": 1794700075,
+   "replies": [],
+   "admin_msgs": {
+    "1373569356": {
+     "chat": 1373569356,
+     "mid": 850,
+     "photo": false
+    },
+    "8634363348": {
+     "chat": 8634363348,
+     "mid": 851,
+     "photo": false
+    }
+   }
+  }
+ },
  "reports": {},
  "inbox": {},
  "events": {},
@@ -298,21 +327,9 @@
    "flow": "reg",
    "step": "name",
    "data": {}
-  },
-  "1373569356": {
-   "flow": "ask",
-   "step": "nav",
-   "data": {
-    "path": [
-     "f_sample_sec",
-     "f06de57a4"
-    ],
-    "text": null,
-    "photo": null
-   }
   }
  },
  "meta": {
-  "updated_at": 1794700065
+  "updated_at": 1794700075
  }
 }
