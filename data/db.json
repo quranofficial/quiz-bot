@@ -323,24 +323,7 @@
  "reports": {},
  "inbox": {},
  "events": {},
- "sessions": {
-  "92287762": {
-   "uid": 92287762,
-   "folder_id": "custom",
-   "folder_title": "تاقیکردنەوەی تایبەت",
-   "qids": [
-    "q0f93726b",
-    "q090342db"
-   ],
-   "idx": 0,
-   "answers": [],
-   "ts": 1794755660.3860261,
-   "src": "section",
-   "event_id": null,
-   "date": null,
-   "extra": {}
-  }
- },
+ "sessions": {},
  "wizard": {
   "8634363348": {
    "flow": "mq",
@@ -354,21 +337,9 @@
    "flow": "reg",
    "step": "name",
    "data": {}
-  },
-  "92287762": {
-   "flow": "quiznum",
-   "step": "pool",
-   "data": {
-    "pool": [
-     "q0f93726b",
-     "q090342db"
-    ],
-    "title": "تاقیکردنەوەی تایبەت",
-    "n": 2
-   }
   }
  },
  "meta": {
-  "updated_at": 1794755660
+  "updated_at": 1794755704
  }
 }
