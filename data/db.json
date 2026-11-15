@@ -337,9 +337,20 @@
    "flow": "reg",
    "step": "name",
    "data": {}
+  },
+  "92287762": {
+   "flow": "mq",
+   "step": "sel",
+   "data": {
+    "sel": [
+     "f_sample_sec",
+     "f01998251"
+    ],
+    "path": []
+   }
   }
  },
  "meta": {
-  "updated_at": 1794755637
+  "updated_at": 1794755646
  }
 }
