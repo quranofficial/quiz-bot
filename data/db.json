@@ -280,10 +280,13 @@
    "uid": 5618135834
   },
   "92287762": {
-   "name": "شنو",
-   "teacher": null,
+   "name": "ژیا",
+   "teacher": false,
    "username": "",
    "joined": 1794755555,
+   "stats": {},
+   "flashcards": [],
+   "last_quiz": null,
    "uid": 92287762
   }
  },
@@ -334,14 +337,9 @@
    "flow": "reg",
    "step": "name",
    "data": {}
-  },
-  "92287762": {
-   "flow": "reg",
-   "step": "name",
-   "data": {}
   }
  },
  "meta": {
-  "updated_at": 1794755555
+  "updated_at": 1794755568
  }
 }
