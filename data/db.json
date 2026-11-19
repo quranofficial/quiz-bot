@@ -362,18 +362,15 @@
   },
   "5560353610": {
    "flow": "quiznum",
-   "step": "pool",
+   "step": "num",
    "data": {
-    "pool": [
-     "q0f93726b",
-     "q090342db"
-    ],
+    "fid": "custom",
     "title": "تاقیکردنەوەی تایبەت",
     "n": 2
    }
   }
  },
  "meta": {
-  "updated_at": 1795063737
+  "updated_at": 1795063748
  }
 }
