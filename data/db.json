@@ -361,17 +361,19 @@
    "data": {}
   },
   "5560353610": {
-   "flow": "mq",
-   "step": "sel",
+   "flow": "quiznum",
+   "step": "pool",
    "data": {
-    "sel": [
-     "f_sample_sec"
+    "pool": [
+     "q0f93726b",
+     "q090342db"
     ],
-    "path": []
+    "title": "تاقیکردنەوەی تایبەت",
+    "n": 2
    }
   }
  },
  "meta": {
-  "updated_at": 1795063725
+  "updated_at": 1795063737
  }
 }
