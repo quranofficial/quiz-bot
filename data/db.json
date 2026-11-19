@@ -297,10 +297,13 @@
    "uid": 8753381497
   },
   "5560353610": {
-   "name": "∞ 📚 ∞",
-   "teacher": null,
+   "name": "لیرە",
+   "teacher": false,
    "username": "@A1S1_1",
    "joined": 1795063671,
+   "stats": {},
+   "flashcards": [],
+   "last_quiz": null,
    "uid": 5560353610
   }
  },
@@ -356,14 +359,9 @@
    "flow": "reg",
    "step": "name",
    "data": {}
-  },
-  "5560353610": {
-   "flow": "reg",
-   "step": "name",
-   "data": {}
   }
  },
  "meta": {
-  "updated_at": 1795063671
+  "updated_at": 1795063686
  }
 }
