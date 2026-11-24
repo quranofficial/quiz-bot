@@ -355,11 +355,6 @@
    "step": "name",
    "data": {}
   },
-  "8753381497": {
-   "flow": "reg",
-   "step": "name",
-   "data": {}
-  },
   "5560353610": {
    "flow": "quiznum",
    "step": "num",
@@ -368,9 +363,17 @@
     "title": "تاقیکردنەوەی تایبەت",
     "n": 2
    }
+  },
+  "8753381497": {
+   "flow": "reg",
+   "step": "name",
+   "data": {
+    "name": "Muhamad",
+    "redo": true
+   }
   }
  },
  "meta": {
-  "updated_at": 1795063748
+  "updated_at": 1795542208
  }
 }
